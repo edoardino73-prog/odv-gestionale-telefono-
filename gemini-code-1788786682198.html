@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8b5cf6">
+    <title>Operativo & Qualità - Cuore d'Argento</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- LIBRERIE PDF (jsPDF & AutoTable) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- LIBRERIA QR CODE -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- FIREBASE SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- GOOGLE MAPS API CON LA TUA CHIAVE -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeHOqzhD1Z5fCV6oleFEVPj9Cs5XMNn60&libraries=places" async defer></script>
+
+    <style>
+        :root {
+            --primary: #8b5cf6; --primary-light: #a78bfa; --primary-dark: #6d28d9; --bg: #f8fafc; 
+            --text-main: #1e293b; --text-muted: #64748b; --border: #e2e8f0;
+            --success: #10b981; --success-bg: #d1fae5; 
+            --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6; --info-bg: #dbeafe;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent;}
+        
+        body { background-color: var(--bg); color: var(--text-main); padding-bottom: env(safe-area-inset-bottom, 80px); max-width: 600px; margin: 0 auto; position: relative; overflow-x: hidden; min-height: 100vh; }
+
+        /* SCHERMATA LOGIN PIN DINAMICA */
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; color: white; overflow-y: auto; }
+        .login-card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 28px; color: var(--text-main); box-shadow: 0 20px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .login-logo { background: var(--primary); width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: white; box-shadow: 0 6px 15px rgba(139,92,246,0.4); }
+        
+        .form-group-login { width: 100%; text-align: left; }
+        .form-group-login label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+
+        .pin-dots { display: flex; gap: 12px; margin: 5px 0; justify-content: center; }
+        .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--primary); background: transparent; transition: 0.2s; }
+        .pin-dot.filled { background: var(--primary); }
+        
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+        .pin-btn { background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 14px; font-size: 1.2rem; font-weight: 700; color: var(--text-main); cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .pin-btn:active { background: #e2e8f0; transform: scale(0.95); }
+        .pin-btn.action { background: #f1f5f9; color: var(--text-muted); font-size: 1rem; }
+
+        /* CORREZIONE DEFINITIVA GRAFICA GOOGLE PLACES AUTOCOMPLETE */
+        .pac-container { z-index: 999999 !important; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: 'Inter', sans-serif; background-color: #ffffff !important; }
+        .pac-item { padding: 12px 15px !important; cursor: pointer; font-size: 0.95rem; display: flex !important; align-items: center; gap: 10px; }
+        .pac-item:hover { background-color: #f1f5f9 !important; }
+        .pac-icon { display: none !important; }
+        .google-autocomplete { background-repeat: no-repeat !important; background-position: right 10px center !important; }
+
+        /* HEADER */
+        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px; border-radius: 0 0 24px 24px; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .app-title { display: flex; align-items: center; gap: 12px; }
+        .app-logo { background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; backdrop-filter: blur(5px);}
+        .app-text h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 2px;}
+        .app-text span { font-size: 0.8rem; opacity: 0.9; font-weight: 500;}
+
+        /* CALENDARIO ORIZZONTALE */
+        .toggle-container { padding: 20px 0; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .toggle-container::-webkit-scrollbar { display: none; }
+        .toggle-bg { display: inline-flex; gap: 12px; padding: 0 20px; }
+        .toggle-btn { padding: 10px 20px; background: #e2e8f0; border-radius: 20px; font-weight: 700; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+        .toggle-btn.active { color: white; background: var(--primary); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+
+        /* LISTA VIAGGI */
+        .feed { padding: 0 20px 80px 20px; display: flex; flex-direction: column; gap: 16px; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 15px; transition: 0.3s;}
+        .card.chiuso { background: #f8fafc; border: 1px solid var(--border); box-shadow: none; opacity: 0.9;}
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .time-badge { background: var(--info-bg); color: var(--info); font-size: 1.4rem; font-weight: 800; padding: 8px 12px; border-radius: 12px; letter-spacing: -0.5px;}
+        .card.chiuso .time-badge { background: var(--success-bg); color: var(--success); }
+        .regime-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: right;}
+        .patient-name { font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 4px; text-align: right;}
+        .divider { height: 1px; background: var(--border); border-radius: 1px; }
+        .route { display: flex; flex-direction: column; gap: 12px; }
+        .route-point { display: flex; gap: 12px; align-items: flex-start; }
+        .icon-col { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;}
+        .icon-col i { font-size: 1rem; }
+        .icon-col .line { width: 2px; height: 15px; background: var(--border); border-radius: 2px; }
+        .text-col { flex: 1; }
+        .text-col span { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;}
+        .text-col strong { font-size: 0.95rem; color: var(--text-main); font-weight: 700; line-height: 1.3; display: block;}
+        .crew-info { background: #f1f5f9; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;}
+        .crew-info div { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-main);}
+        .crew-info i { color: var(--text-muted); }
+        
+        .btn-action { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(to right, var(--success), #059669); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; cursor: pointer;}
+        .status-done { text-align: center; padding: 12px; background: var(--success-bg); color: var(--success); border-radius: 12px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .status-locked { text-align: center; padding: 12px; background: #f1f5f9; color: var(--text-muted); border-radius: 12px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--border);}
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+        .empty-state i { font-size: 4rem; color: var(--border); margin-bottom: 15px; }
+
+        /* FAB E MENU */
+        .fab-container { position: fixed; bottom: 25px; right: 20px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 15px;}
+        .fab-main { width: 65px; height: 65px; border-radius: 50%; background: var(--primary); color: white; border: none; font-size: 1.8rem; box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
+        .fab-menu { display: flex; flex-direction: column; gap: 12px; opacity: 0; pointer-events: none; transform: translateY(20px); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); align-items: flex-end;}
+        .fab-container.active .fab-menu { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .fab-container.active .fab-main { transform: rotate(45deg); background: var(--text-main); box-shadow: 0 6px 20px rgba(0,0,0,0.3);}
+        .fab-item { display: flex; align-items: center; gap: 12px; background: white; border: none; padding: 14px 20px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; color: var(--text-main); box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s;}
+        .fab-item i { font-size: 1.2rem; color: var(--primary); width: 20px; text-align: center;}
+        
+        .overlay-bg { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 899; opacity: 0; pointer-events: none; transition: 0.3s;}
+        .overlay-bg.active { opacity: 1; pointer-events: auto; }
+
+        /* SCHERMATE MODULI E FORM */
+        .mobile-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 1500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column;}
+        .mobile-page.active { transform: translateX(0); }
+        .page-header { background: var(--primary); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; font-size: 1.2rem; font-weight: 800; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 10;}
+        .page-content { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        .form-group { margin-bottom: 20px; position: relative;}
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;}
+        .form-control { width: 100%; height: 50px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 1.05rem; outline: none; background: #f8fafc;}
+        .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(139,92,246,0.1);}
+        textarea.form-control { resize: vertical; min-height: 100px; height: auto; }
+        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: white; font-weight: 800; font-size: 1.1rem; border: none; border-radius: 14px; margin-top: 10px; box-shadow: 0 6px 20px rgba(139,92,246,0.3); text-transform: uppercase; cursor: pointer;}
+        
+        /* BOTTOM SHEET - MODIFICATO Z-INDEX A 2600 */
+        .bottom-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: white; border-radius: 28px 28px 0 0; padding: 30px 24px env(safe-area-inset-bottom, 24px) 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); z-index: 2600; transition: bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); max-width: 600px; margin: 0 auto; max-height: 92vh; overflow-y: auto;}
+        .bottom-sheet.active { bottom: 0; }
+        .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 5px; margin: 0 auto 20px auto; }
+        .sheet-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; text-align: center;}
+        
+        .input-huge { width: 100%; font-size: 2.5rem; font-weight: 800; color: var(--primary); text-align: center; border: none; background: transparent; outline: none; padding: 10px; border-bottom: 2px solid var(--border); margin-bottom: 20px;}
+        
+        .upload-btn { width: 100%; background: #e2e8f0; color: var(--text-main); padding: 15px; border-radius: 12px; border: 1px dashed var(--text-muted); font-weight: 700; text-align: center; margin-bottom: 20px; display: block; cursor: pointer;}
+        .upload-btn.loaded { background: var(--success-bg); color: var(--success); border-style: solid; border-color: var(--success);}
+        .sig-container { border: 2px solid var(--border); border-radius: 12px; background: #f8fafc; margin-bottom: 20px; position: relative; overflow: hidden;}
+        .sig-canvas { width: 100%; height: 180px; display: block; touch-action: none; }
+        .sig-clear { position: absolute; top: 10px; right: 10px; background: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; color: var(--text-muted);}
+
+        .sheet-buttons { display: flex; gap: 15px; }
+        .btn-cancel { flex: 1; padding: 16px; border-radius: 14px; border: none; background: var(--bg); color: var(--text-muted); font-weight: 700; font-size: 1rem; cursor: pointer;}
+        .btn-confirm { flex: 2; padding: 16px; border-radius: 14px; border: none; background: var(--primary); color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 6px 15px rgba(139, 92, 246, 0.3); cursor: pointer;}
+
+        /* MODALE TESSERA VOLONTARIO (Allineata al Gestionale) */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 2500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; padding: 20px; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .tessera-badge { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; position: relative; margin: 0 auto; border: 1px solid var(--border); width: 100%; max-width: 320px; }
+        .tessera-header { background: var(--primary); padding: 20px 10px; color: white; }
+        .tessera-body { padding: 25px 20px; background: white;}
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1e293b; color: white; padding: 14px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 600; z-index: 3000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); opacity: 0; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; align-items: center; gap: 10px; white-space: nowrap;}
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- SCHERMATA LOGIN PIN DINAMICA -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-logo"><i class="fa-solid fa-truck-medical"></i></div>
+            <div style="text-align:center;">
+                <h2 style="font-size:1.3rem; font-weight:800; color:var(--text-main);">Cuore d'Argento</h2>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Seleziona il tuo nome e inserisci il PIN</p>
+            </div>
+            
+            <div class="form-group-login">
+                <label>Seleziona Operatore / Volontario</label>
+                <select id="select-login-volontario" class="form-control" style="padding:10px; font-size:0.95rem;">
+                    <option value="">Caricamento volontari da Firebase...</option>
+                </select>
+            </div>
+
+            <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-top:5px;">Inserisci PIN (Default: 1234)</div>
+            <div class="pin-dots">
+                <div class="pin-dot" id="dot-0"></div>
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+            </div>
+
+            <div class="pin-pad">
+                <button class="pin-btn" onclick="aggiungiDigit(1)">1</button>
+                <button class="pin-btn" onclick="aggiungiDigit(2)">2</button>
+                <button class="pin-btn" onclick="aggiungiDigit(3)">3</button>
+                <button class="pin-btn" onclick="aggiungiDigit(4)">4</button>
+                <button class="pin-btn" onclick="aggiungiDigit(5)">5</button>
+                <button class="pin-btn" onclick="aggiungiDigit(6)">6</button>
+                <button class="pin-btn" onclick="aggiungiDigit(7)">7</button>
+                <button class="pin-btn" onclick="aggiungiDigit(8)">8</button>
+                <button class="pin-btn" onclick="aggiungiDigit(9)">9</button>
+                <button class="pin-btn action" onclick="resetPin()"><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="pin-btn" onclick="aggiungiDigit(0)">0</button>
+                <button class="pin-btn action" onclick="cancellaDigit()"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+            <div id="login-error" style="color:var(--danger); font-size:0.85rem; text-align:center; display:none;">Seleziona un operatore o PIN errato.</div>
+        </div>
+    </div>
+
+    <!-- INTERFACCIA PRINCIPALE -->
+    <div id="main-app" style="display:none;">
+        <header>
+            <div class="app-title">
+                <div class="app-logo"><i class="fa-solid fa-truck-medical"></i></div>
+                <div class="app-text">
+                    <h1>Cuore d'Argento</h1>
+                    <span id="data-header">Caricamento...</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <!-- Pulsante PDF per Stampa Report Giornaliero -->
+                <button onclick="stampaReportGiornalieroPDF()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Stampa Report Giornaliero"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <!-- Pulsante Tessera Volontario -->
+                <button onclick="apriTesseraVolontario()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Tessera Volontario"><i class="fa-solid fa-id-card"></i> Tessera</button>
+                <!-- Pulsante Blocco App -->
+                <button onclick="eseguiLogout()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Blocca App"><i class="fa-solid fa-lock"></i></button>
+            </div>
+        </header>
+
+        <div class="toggle-container">
+            <div class="toggle-bg" id="day-tabs-container"></div>
+        </div>
+
+        <div class="feed" id="lista-servizi">
+            <div class="empty-state">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <h3>Sincronizzazione...</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- PULSANTE FAB E MENU -->
+    <div class="overlay-bg" id="fab-overlay" onclick="toggleFab()"></div>
+    <div class="fab-container" id="fab-container" style="display:none;">
+        <div class="fab-menu">
+            <button class="fab-item" onclick="apriPagina('page-checklist')"><i class="fa-solid fa-clipboard-check"></i> Checklist Inizio Turno</button>
+            <button class="fab-item" onclick="apriPagina('page-sanificazione')"><i class="fa-solid fa-spray-can-sparkles"></i> Log Sanificazione</button>
+            <button class="fab-item" onclick="apriPagina('page-servizio')"><i class="fa-solid fa-truck-medical"></i> Nuovo Servizio</button>
+            <button class="fab-item" onclick="apriPagina('page-dialisi')"><i class="fa-solid fa-calendar-days"></i> Pianifica Dialisi</button>
+            <button class="fab-item" onclick="apriPagina('page-nc')"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> Segnala NC / Reclamo</button>
+        </div>
+        <button class="fab-main" onclick="toggleFab()"><i class="fa-solid fa-plus"></i></button>
+    </div>
+
+    <!-- MODALE TESSERA VOLONTARIO (Allineata al Gestionale) -->
+    <div class="modal-overlay" id="modal-tessera" onclick="chiudiTesseraVolontario()">
+        <div style="width: 100%; max-width: 340px; padding: 15px; display: flex; flex-direction: column; gap: 15px;" onclick="event.stopPropagation()">
+            
+            <!-- Layout Badge Visivo -->
+            <div class="tessera-badge">
+                <div class="tessera-header">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:5px;">
+                        <i class="fa-solid fa-file-medical" style="font-size:1.5rem;"></i>
+                        <span style="font-weight:800; font-size:1.1rem;">CUORE D'ARGENTO</span>
+                    </div>
+                    <h3 style="font-size: 0.8rem; margin: 0; font-weight:500;">Tessera di Riconoscimento</h3>
+                </div>
+                
+                <div class="tessera-body">
+                    <img id="tessera-foto" src="https://via.placeholder.com/150" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                    <h2 id="tessera-nome" style="font-size: 1.3rem; color: var(--text-main); margin-bottom: 5px; font-weight:800;">-</h2>
+                    <div id="tessera-ruolo" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; text-transform: uppercase; margin-bottom: 20px;">-</div>
+                    
+                    <div id="qrcode-container-mobile" style="display:flex; justify-content:center; align-items:center; min-height: 110px; margin-bottom:15px;"></div>
+                    
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <span>ID: <strong id="tessera-id" style="color:var(--text-main);">-</strong></span>
+                        <span>Scad: <strong id="tessera-stato-quota" style="color:var(--success);">-</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pulsanti Azione -->
+            <button type="button" class="btn-submit" onclick="scaricaTesseraPDFMobile()" style="margin: 0; background: var(--info); border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size:1rem;"><i class="fa-solid fa-file-pdf"></i> Stampa Tessera (81/08)</button>
+            <button type="button" class="btn-submit" onclick="chiudiTesseraVolontario()" style="margin: 0; background: var(--text-main); border-radius: 20px; font-size:1rem;">Chiudi</button>
+            
+        </div>
+    </div>
+
+    <!-- PAGINA: CHECKLIST -->
+    <div class="mobile-page" id="page-checklist">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-checklist')"></i><span>Checklist Inizio Turno</span></div>
+        <div class="page-content">
+            <form id="form-checklist" onsubmit="salvaChecklistMobile(event)">
+                <div class="form-group"><label>Data e Ora</label><input type="datetime-local" id="chk-data" class="form-control" required></div>
+                <div class="form-group"><label>Mezzo Preso in Carico</label><select id="chk-mezzo" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Responsabile (Autista)</label><select id="chk-autista" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Chilometri Attuali del Mezzo</label><input type="number" id="chk-km" class="form-control" placeholder="Es. 120500" required></div>
+                <div class="form-group"><label>Livello Carburante</label><select id="chk-carburante" class="form-control" required><option value="Pieno">Pieno</option><option value="3/4">3/4 di Serbatoio</option><option value="1/2">Metà (1/2)</option><option value="Riserva">In Riserva ⚠️</option></select></div>
+                <button type="submit" class="btn-submit">Salva Checklist</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA SANIFICAZIONE -->
+    <div class="mobile-page" id="page-sanificazione">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-sanificazione')"></i><span>Log Sanificazione</span></div>
+        <div class="page-content">
+            <form id="form-sanificazione" onsubmit="salvaSanificazioneMobile(event)">
+                <div class="form-group"><label>Data</label><input type="date" id="san-data" class="form-control" required></div>
+                <div class="form-group"><label>Mezzo Sanificato</label><select id="san-mezzo" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Operatore</label><select id="san-operatore" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Tipo Intervento</label><select id="san-tipo" class="form-control" required><option value="Ordinaria (Fine Turno)">Ordinaria (Fine Turno)</option><option value="Straordinaria (Rischio Infettivo)">Straordinaria (Rischio Infettivo)</option></select></div>
+                <button type="submit" class="btn-submit">Registra Ora</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA NUOVO SERVIZIO -->
+    <div class="mobile-page" id="page-servizio">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-servizio')"></i><span>Nuovo Servizio Base</span></div>
+        <div class="page-content">
+            <form id="form-servizio" onsubmit="salvaServizioMobile(event)">
+                <div class="form-group"><label>Data</label><input type="date" id="svz-data" class="form-control" required></div>
+                <div class="form-group"><label>Ora</label><input type="time" id="svz-ora" class="form-control" required></div>
+                <div class="form-group"><label>Paziente</label><input type="text" id="svz-paziente" class="form-control" required placeholder="Nome e Cognome"></div>
+                <div class="form-group"><label>Regime Trasporto</label><select id="svz-regime" class="form-control" required><option value="Privato">Privato / Altro</option><option value="Convenzione ASL Umbria 2">Convenzione ASL Umbria 2</option></select></div>
+                <div class="form-group"><label>Partenza</label><input type="text" id="svz-partenza" class="form-control google-autocomplete" required placeholder="Cerca indirizzo" autocomplete="off"></div>
+                <div class="form-group"><label>Destinazione</label><input type="text" id="svz-destinazione" class="form-control google-autocomplete" required placeholder="Cerca Ospedale" autocomplete="off"></div>
+                <div class="form-group"><label>Mezzo Assegnato</label><select id="svz-mezzo" class="form-control select-mezzi" required></select></div>
+                <button type="submit" class="btn-submit">Salva Servizio</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA DIALISI -->
+    <div class="mobile-page" id="page-dialisi">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-dialisi')"></i><span>Pianifica Dialisi</span></div>
+        <div class="page-content">
+            <form id="form-dialisi" onsubmit="salvaDialisiMobile(event)">
+                <div class="form-group"><label>Paziente</label><input type="text" id="dia-paziente" class="form-control" required placeholder="Nome e Cognome"></div>
+                <div class="form-group"><label>Mezzo Assegnato</label><select id="dia-mezzo" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Partenza (Casa)</label><input type="text" id="dia-partenza" class="form-control google-autocomplete" required autocomplete="off"></div>
+                <div class="form-group"><label>Destinazione (Centro Dialisi)</label><input type="text" id="dia-destinazione" class="form-control google-autocomplete" required autocomplete="off"></div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;"><label>Data Inizio</label><input type="date" id="dia-inizio" class="form-control" required></div>
+                    <div class="form-group" style="flex:1;"><label>Data Fine</label><input type="date" id="dia-fine" class="form-control" required></div>
+                </div>
+                <button type="submit" class="btn-submit">Genera Ciclo Viaggi</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA SEGNALAZIONE NC -->
+    <div class="mobile-page" id="page-nc">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-nc')"></i><span>Segnala NC o Reclamo</span></div>
+        <div class="page-content">
+            <form id="form-nc-mobile" onsubmit="salvaNCMobile(event)">
+                <div class="form-group"><label>Data</label><input type="date" id="nc-data" class="form-control" required></div>
+                <div class="form-group"><label>Operatore Segnalante</label><select id="nc-rilevatore" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Tipologia</label><select id="nc-tipo" class="form-control" required><option value="Reclamo da Paziente/ASL">Reclamo da Paziente/ASL</option><option value="Guasto Mezzo">Guasto Mezzo</option></select></div>
+                <div class="form-group"><label>Descrizione</label><textarea id="nc-descrizione" class="form-control" required placeholder="Dettagli..."></textarea></div>
+                <button type="submit" class="btn-submit" style="background:var(--warning);">Invia a Centrale</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE BOTTOM SHEET CHIUSURA -->
+    <div class="modal-overlay" id="overlay" onclick="chiudiModaleBottomSheet()"></div>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Chiusura Servizio</div>
+        <div style="text-align: center; color: var(--text-muted); font-weight: 700; margin-bottom: 20px;" id="sheet-patient-name">Paziente</div>
+        
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">KM Totali Arrivo</label>
+        <input type="number" id="km-input" class="input-huge" placeholder="0" inputmode="numeric">
+        
+        <label for="foto-upload" id="lbl-foto" class="upload-btn"><i class="fa-solid fa-camera"></i> Allega Scontrino</label>
+        <input type="file" id="foto-upload" accept="image/*" capture="environment" style="display:none;">
+
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display:block;">Firma Paziente / Infermiere</label>
+        <div class="sig-container">
+            <button type="button" class="sig-clear" onclick="pulisciFirma()">Cancella</button>
+            <canvas id="signature-pad" class="sig-canvas"></canvas>
+        </div>
+        
+        <div class="sheet-buttons">
+            <button class="btn-cancel" onclick="chiudiModaleBottomSheet()">Annulla</button>
+            <button class="btn-confirm" onclick="confermaChiusura()"><i class="fa-solid fa-check"></i> Salva e Chiudi</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"><i class="fa-solid fa-circle-check" style="color:#4ade80"></i> <span id="toast-msg">Operazione completata!</span></div>
+
+    <script>
+        // CONFIGURAZIONE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhi3SRh2mDqz8_T03xYVq4XtcRiAL7IF0",
+            authDomain: "cuore-d-argento.firebaseapp.com",
+            databaseURL: "https://cuore-d-argento-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "cuore-d-argento",
+            storageBucket: "cuore-d-argento.firebasestorage.app",
+            messagingSenderId: "271690439864",
+            appId: "1:271690439864:web:17b36ef2c5ab4263d3684d"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const database = firebase.database();
+
+        let PIN_CORRETTO = "1234";
+        let pinInserito = "";
+        let volontarioCorrente = "";
+        let dbRootPath = 'cuore_argento_db'; // Variabile dinamica per la sincronizzazione
+
+        const societaInfo = {
+            nome: "Associazione di Volontariato Cuore d'Argento ODV",
+            sede: "Via della Stazione n. 51 – 05035 Narni Scalo (TR)",
+            cfPiva: "C.F. / P.IVA: 01725470551",
+            runts: "RUNTS Det. n. 870/2025 Regione Umbria",
+            autorizzazione: "Aut. Esercizio n. 8642 del 19/08/2025"
+        };
+
+        let tuttiTrasporti = [], sanificazioni = [], mezzi = [], volontari = [], checklists = [], nonConformita = [];
+        let offsetGiorno = 0, dateSettimana = [], idServizioAttivo = null;
+        let fotoScontrinoBase64 = null;
+
+        // --- ASCOLTO DATI DA FIREBASE (Allineato al Gestionale Desktop) ---
+        database.ref('/').on('value', (snapshot) => {
+            const rawData = snapshot.val() || {};
+            let data = rawData;
+            
+            // Trova la radice corretta del database
+            if (rawData.cuore_argento_db && typeof rawData.cuore_argento_db === 'object') {
+                data = rawData.cuore_argento_db;
+                dbRootPath = 'cuore_argento_db';
+            } else {
+                let altKey = Object.keys(rawData).find(k => rawData[k] && typeof rawData[k] === 'object' && (rawData[k].volontari || rawData[k].trasporti || rawData[k].mezzi));
+                if (altKey) {
+                    data = rawData[altKey];
+                    dbRootPath = altKey;
+                }
+            }
+
+            volontari = estraiDati(data.volontari);
+            tuttiTrasporti = estraiDati(data.trasporti);
+            sanificazioni = estraiDati(data.sanificazioni);
+            mezzi = estraiDati(data.mezzi);
+            checklists = estraiDati(data.checklists);
+            nonConformita = estraiDati(data.nonConformita);
+            
+            popolaSelectLoginVolontari();
+            aggiornaDropdownListe();
+            
+            if(document.getElementById('main-app').style.display === 'block') {
+                renderServizi();
+            }
+        });
+
+        // Estrattore robusto allineato al Desktop
+        function estraiDati(nodo) {
+            if (!nodo) return [];
+            if (Array.isArray(nodo)) { return nodo.filter(item => item !== null && typeof item === 'object'); }
+            if (typeof nodo === 'object') {
+                return Object.keys(nodo).map(key => {
+                    let item = nodo[key]; 
+                    if (item && typeof item === 'object') { item.id = item.id || key; } 
+                    return item;
+                }).filter(item => item !== null && typeof item === 'object');
+            }
+            return [];
+        }
+
+        function popolaSelectLoginVolontari() {
+            const select = document.getElementById('select-login-volontario');
+            if(!select) return;
+            let opts = '<option value="">-- Seleziona il tuo nome --</option>';
+            volontari.forEach(v => {
+                opts += `<option value="${v.nome}">${v.nome} (${v.ruolo || v.qualifica || 'Volontario'})</option>`;
+            });
+            select.innerHTML = opts;
+        }
+
+        function aggiornaVisualizzazionePin() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i < pinInserito.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            }
+        }
+
+        function aggiungiDigit(num) {
+            const selectVol = document.getElementById('select-login-volontario').value;
+            if(!selectVol) { alert("Seleziona prima il tuo nome dalla lista!"); return; }
+            if (pinInserito.length < 4) {
+                pinInserito += num;
+                aggiornaVisualizzazionePin();
+                if (pinInserito.length === 4) { verificaPin(); }
+            }
+        }
+
+        function cancellaDigit() {
+            if (pinInserito.length > 0) {
+                pinInserito = pinInserito.slice(0, -1);
+                aggiornaVisualizzazionePin();
+                document.getElementById('login-error').style.display = 'none';
+            }
+        }
+
+        function resetPin() {
+            pinInserito = "";
+            aggiornaVisualizzazionePin();
+            document.getElementById('login-error').style.display = 'none';
+        }
+
+        function verificaPin() {
+            volontarioCorrente = document.getElementById('select-login-volontario').value;
+            let volObj = volontari.find(v => v.nome === volontarioCorrente);
+            
+            let pinValido = PIN_CORRETTO;
+            if(volObj) {
+                if (volObj.pin && String(volObj.pin).trim() !== "") {
+                    pinValido = String(volObj.pin);
+                } else if(volObj.tel && volObj.tel.length >= 4) {
+                    pinValido = volObj.tel.slice(-4);
+                }
+            }
+
+            if (pinInserito === pinValido || pinInserito === PIN_CORRETTO) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                document.getElementById('fab-container').style.display = 'flex';
+                
+                document.getElementById('tessera-nome').innerText = volontarioCorrente;
+                
+                if(volObj) {
+                    document.getElementById('tessera-ruolo').innerText = volObj.ruolo || volObj.qualifica || 'Volontario';
+                    document.getElementById('tessera-id').innerText = volObj.id || 'N/D';
+                    
+                    const imgEl = document.getElementById('tessera-foto');
+                    if (volObj.foto) { imgEl.src = volObj.foto; } else { imgEl.src = 'https://via.placeholder.com/150'; }
+                    
+                    let statoQuotaTesto = "IN REGOLA";
+                    let coloreQuota = "var(--success)";
+                    if (volObj.quota) {
+                        const diff = Math.ceil((new Date(volObj.quota) - new Date()) / (1000 * 60 * 60 * 24));
+                        if (diff < 0) { statoQuotaTesto = "SCADUTA"; coloreQuota = "var(--danger)"; }
+                    }
+                    const quotaEl = document.getElementById('tessera-stato-quota');
+                    quotaEl.innerText = statoQuotaTesto;
+                    quotaEl.style.color = coloreQuota;
+                    
+                    const qrContainer = document.getElementById('qrcode-container-mobile');
+                    if (qrContainer) {
+                        qrContainer.innerHTML = "";
+                        let urlVerifica = "https://tuo-dominio.netlify.app/?verify=" + volObj.id; 
+                        setTimeout(() => {
+                            try { new QRCode(qrContainer, { text: urlVerifica, width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L }); } catch(e) {}
+                        }, 100);
+                    }
+                }
+
+                showToast(`Benvenuto, ${volontarioCorrente}`);
+                inizializzaAppDati();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+                setTimeout(resetPin, 800);
+            }
+        }
+
+        function eseguiLogout() {
+            pinInserito = "";
+            volontarioCorrente = "";
+            aggiornaVisualizzazionePin();
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('fab-container').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            showToast("App bloccata in sicurezza");
+        }
+
+        function apriTesseraVolontario() { document.getElementById('modal-tessera').classList.add('active'); }
+        function chiudiTesseraVolontario() { document.getElementById('modal-tessera').classList.remove('active'); }
+
+        function inizializzaAppDati() {
+            const opzioniData = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('data-header').innerText = new Date().toLocaleDateString('it-IT', opzioniData);
+            
+            const oggiIso = getDataStr(0);
+            document.getElementById('san-data').value = oggiIso;
+            document.getElementById('svz-data').value = oggiIso;
+            document.getElementById('dia-inizio').value = oggiIso;
+            document.getElementById('nc-data').value = oggiIso;
+            
+            let now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('chk-data').value = now.toISOString().slice(0,16);
+
+            inizializzaCalendario();
+            renderServizi();
+            initGooglePlacesAutocomplete();
+        }
+
+        function initGooglePlacesAutocomplete() {
+            if (typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+            const inputs = document.querySelectorAll('.google-autocomplete');
+            inputs.forEach(input => {
+                if (input.dataset.autocompleteInitialized) return;
+                input.addEventListener('input', (e) => { if (e.target.value.includes('!')) { e.target.value = e.target.value.replace(/!/g, ''); } });
+                const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "it" }, fields: ["formatted_address", "name"] });
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    let val = place.formatted_address || place.name || '';
+                    input.value = val.replace(/!/g, '');
+                });
+                input.dataset.autocompleteInitialized = "true";
+            });
+        }
+
+        function inizializzaCalendario() {
+            const tabsContainer = document.getElementById('day-tabs-container');
+            tabsContainer.innerHTML = '';
+            dateSettimana = [];
+            for (let i = 0; i < 7; i++) {
+                let dIso = getDataStr(i);
+                dateSettimana.push(dIso);
+                let d = new Date(dIso);
+                let nomeGiorno = i === 0 ? "Oggi" : (i === 1 ? "Domani" : d.toLocaleDateString('it-IT', { weekday: 'short' }).replace('.', ''));
+                nomeGiorno = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1);
+                let etichetta = `${nomeGiorno} ${d.getDate()} ${d.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '')}`;
+                tabsContainer.innerHTML += `<div class="toggle-btn ${i === 0 ? 'active' : ''}" id="tab-${i}" onclick="cambiaGiorno(${i})">${etichetta}</div>`;
+            }
+        }
+
+        function cambiaGiorno(indice) {
+            offsetGiorno = indice;
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + indice).classList.add('active');
+            renderServizi();
+        }
+
+        function getDataStr(aggiungiGiorni = 0) {
+            let d = new Date(); d.setDate(d.getDate() + aggiungiGiorni);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0];
+        }
+
+        function aggiornaDropdownListe() {
+            let optMezzi = '<option value="">-- Seleziona --</option>';
+            mezzi.forEach(m => optMezzi += `<option value="${m.nome} (${m.targa})">${m.nome} - ${m.targa}</option>`);
+            document.querySelectorAll('.select-mezzi').forEach(el => el.innerHTML = optMezzi);
+
+            let optVol = '<option value="">-- Seleziona --</option>';
+            volontari.forEach(v => optVol += `<option value="${v.nome}">${v.nome}</option>`);
+            document.querySelectorAll('.select-volontari').forEach(el => el.innerHTML = optVol);
+            
+            if(volontarioCorrente) {
+                document.querySelectorAll('.select-volontari').forEach(el => {
+                    if(!el.value) el.value = volontarioCorrente;
+                });
+            }
+        }
+
+        function renderServizi() {
+            const container = document.getElementById('lista-servizi');
+            if(!container) return;
+            container.innerHTML = '';
+            const dataFiltro = dateSettimana[offsetGiorno], dataOggi = dateSettimana[0];
+            let serviziGiorno = tuttiTrasporti.filter(t => t.data === dataFiltro).sort((a, b) => (a.ora > b.ora) ? 1 : -1);
+
+            if (serviziGiorno.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-mug-hot"></i><h3>Nessun Servizio</h3><p>Non ci sono viaggi programmati per questa data.</p></div>`; return;
+            }
+
+            serviziGiorno.forEach(t => {
+                let chiuso = (t.stato === 'Completato' || t.stato === 'Da Rendicontare' || t.statoServizio === 'Completato' || t.statoServizio === 'Da Rendicontare');
+                
+                let htmlPulsante = chiuso ? `<div class="status-done"><i class="fa-solid fa-check-double"></i> Concluso ${t.oraChiusura ? 'alle '+t.oraChiusura : ''}</div>` : 
+                                  (dataFiltro === dataOggi ? `<button class="btn-action" onclick="apriPannelloChiusura('${t.id}')"><i class="fa-solid fa-flag-checkered"></i> Chiudi Servizio</button>` : 
+                                  `<div class="status-locked"><i class="fa-solid fa-lock"></i> Chiudibile il ${new Date(dataFiltro).toLocaleDateString('it-IT')}</div>`);
+
+                let ic = t.regime && t.regime.toLowerCase().includes('asl') ? 'fa-file-medical' : 'fa-hand-holding-dollar';
+                
+                // Pulsante Esportazione Calendario Mobile
+                let btnCalendar = `<button type="button" onclick="generaICSMobile('${t.id}')" style="background:var(--warning); color:white; border:none; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:700; box-shadow: 0 4px 10px rgba(245,158,11,0.3); cursor:pointer; margin-top:6px; width:100%; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fa-regular fa-calendar-plus"></i> Cal</button>`;
+
+                container.innerHTML += `
+                    <div class="card ${chiuso ? 'chiuso' : ''}">
+                        <div class="card-top">
+                            <div style="display:flex; flex-direction:column; align-items:center; min-width: 60px;">
+                                <div class="time-badge">${t.ora}</div>
+                                ${!chiuso ? btnCalendar : ''}
+                            </div>
+                            <div style="flex:1; padding-left:12px;">
+                                <div class="regime-label"><i class="fa-solid ${ic}"></i> ${t.regime || 'Privato'}</div>
+                                <div class="patient-name">${t.paziente}</div>
+                            </div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="route">
+                            <div class="route-point"><div class="icon-col"><i class="fa-regular fa-circle-dot" style="color:var(--info)"></i><div class="line"></div></div><div class="text-col"><span>Partenza</span><strong>${t.partenza}</strong></div></div>
+                            <div class="route-point"><div class="icon-col"><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i></div><div class="text-col"><span>Destinazione</span><strong>${t.destinazione}</strong></div></div>
+                        </div>
+                        <div class="crew-info"><div><i class="fa-solid fa-truck-medical"></i> ${t.mezzo || t.mezzoSelezionato || 'N/D'}</div><div><i class="fa-solid fa-users"></i> ${t.autista || t.autistaSelezionato || '-'} &bull; ${t.soccorritore || t.soccorritoreSelezionato || '-'}</div></div>
+                        ${htmlPulsante}
+                    </div>`;
+            });
+        }
+
+        // --- FIRMA DIGITALE & SCONTRINO (OTTIMIZZATO PER TOUCH/MOBILE) ---
+        let signatureCtx, signatureCanvas, isDrawing = false;
+        let lastPos = null;
+
+        function initFirma() {
+            signatureCanvas = document.getElementById('signature-pad');
+            signatureCtx = signatureCanvas.getContext('2d', { willReadFrequently: true });
+            
+            const rect = signatureCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            signatureCanvas.width = rect.width * dpr;
+            signatureCanvas.height = rect.height * dpr;
+            signatureCtx.scale(dpr, dpr);
+            
+            signatureCanvas.style.width = rect.width + 'px';
+            signatureCanvas.style.height = rect.height + 'px';
+
+            signatureCtx.lineWidth = 3; 
+            signatureCtx.lineCap = 'round'; 
+            signatureCtx.lineJoin = 'round'; 
+            signatureCtx.strokeStyle = '#1e293b';
+
+            const getPos = (e) => {
+                const rect = signatureCanvas.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            };
+
+            const start = (e) => { 
+                e.preventDefault(); 
+                isDrawing = true; 
+                lastPos = getPos(e); 
+                signatureCtx.beginPath(); 
+                signatureCtx.moveTo(lastPos.x, lastPos.y); 
+            };
+
+            const draw = (e) => { 
+                e.preventDefault(); 
+                if(!isDrawing || !lastPos) return; 
+                
+                const pos = getPos(e); 
+                
+                const midPoint = {
+                    x: lastPos.x + (pos.x - lastPos.x) / 2,
+                    y: lastPos.y + (pos.y - lastPos.y) / 2
+                };
+                
+                signatureCtx.quadraticCurveTo(lastPos.x, lastPos.y, midPoint.x, midPoint.y);
+                signatureCtx.stroke();
+                
+                lastPos = pos;
+            };
+
+            const stop = (e) => { 
+                e.preventDefault();
+                isDrawing = false; 
+                lastPos = null;
+            };
+
+            signatureCanvas.addEventListener('pointerdown', start, {passive: false});
+            signatureCanvas.addEventListener('pointermove', draw, {passive: false});
+            signatureCanvas.addEventListener('pointerup', stop);
+            signatureCanvas.addEventListener('pointerout', stop);
+            signatureCanvas.addEventListener('pointercancel', stop);
+        }
+
+        window.pulisciFirma = () => { if(signatureCtx && signatureCanvas) signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height); };
+
+        function isCanvasBlank(canvas) {
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height; return canvas.toDataURL() === blank.toDataURL();
+        }
+
+        document.getElementById('foto-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const btnLabel = document.getElementById('lbl-foto');
+            btnLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Elaborazione...';
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    fotoScontrinoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    btnLabel.innerHTML = '<i class="fa-solid fa-check"></i> Scontrino Caricato';
+                    btnLabel.classList.add('loaded');
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        window.apriPannelloChiusura = (id) => {
+            const t = tuttiTrasporti.find(x => String(x.id) === String(id));
+            if (!t) return;
+            idServizioAttivo = id;
+            document.getElementById('sheet-patient-name').innerText = `${t.paziente}\nDa: ${t.partenza}`;
+            let kmSuggeriti = Math.max(0, (parseFloat(t.kmArrivo) || 0) - (parseFloat(t.kmPartenza) || 0));
+            document.getElementById('km-input').value = kmSuggeriti > 0 ? kmSuggeriti : '';
+            
+            fotoScontrinoBase64 = null;
+            document.getElementById('lbl-foto').innerHTML = '<i class="fa-solid fa-camera"></i> Allega Scontrino';
+            document.getElementById('lbl-foto').classList.remove('loaded');
+            
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('bottomSheet').classList.add('active');
+            setTimeout(() => { initFirma(); }, 400);
+        };
+
+        window.chiudiModaleBottomSheet = () => {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('bottomSheet').classList.remove('active');
+            idServizioAttivo = null;
+        };
+
+        window.confermaChiusura = () => {
+            if (!idServizioAttivo) return;
+            const kmFinali = document.getElementById('km-input').value;
+            if (kmFinali === "" || kmFinali < 0) { alert("Inserisci i chilometri di fine viaggio."); return; }
+
+            const t = tuttiTrasporti.find(x => String(x.id) === String(idServizioAttivo));
+            t.kmPartenza = 0;
+            t.kmArrivo = parseFloat(kmFinali) || 0;
+            if(fotoScontrinoBase64) t.fotoScontrino = fotoScontrinoBase64;
+            if(signatureCanvas && !isCanvasBlank(signatureCanvas)) { t.firma = signatureCanvas.toDataURL('image/png'); }
+            t.oraChiusura = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            
+            t.statoServizio = t.regime.toLowerCase().includes('asl') ? "Da Rendicontare" : "Completato";
+            t.stato = t.statoServizio;
+            
+            chiudiModaleBottomSheet();
+            database.ref(dbRootPath + '/trasporti').set(tuttiTrasporti).then(() => { showToast('Servizio chiuso e archiviato!'); });
+        };
+
+        window.toggleFab = () => { document.getElementById('fab-container').classList.toggle('active'); document.getElementById('fab-overlay').classList.toggle('active'); };
+        window.apriPagina = (pageId) => { toggleFab(); document.getElementById(pageId).classList.add('active'); setTimeout(initGooglePlacesAutocomplete, 300); };
+        window.chiudiPagina = (pageId) => { document.getElementById(pageId).classList.remove('active'); };
+
+        // --- SALVATAGGI MODULI SU FIREBASE ---
+        window.salvaChecklistMobile = (e) => {
+            e.preventDefault();
+            const obj = { id: Date.now(), data: document.getElementById('chk-data').value, mezzo: document.getElementById('chk-mezzo').value, autista: document.getElementById('chk-autista').value, km: document.getElementById('chk-km').value, carburante: document.getElementById('chk-carburante').value };
+            checklists.push(obj);
+            database.ref(dbRootPath + '/checklists').set(checklists).then(() => { chiudiPagina('page-checklist'); document.getElementById('form-checklist').reset(); showToast('Checklist salvata!'); });
+        };
+
+        window.salvaSanificazioneMobile = (e) => {
+            e.preventDefault();
+            sanificazioni.push({ id: Date.now(), data: document.getElementById('san-data').value, mezzo: document.getElementById('san-mezzo').value, operatore: document.getElementById('san-operatore').value, tipo: document.getElementById('san-tipo').value });
+            database.ref(dbRootPath + '/sanificazioni').set(sanificazioni).then(() => { chiudiPagina('page-sanificazione'); document.getElementById('form-sanificazione').reset(); showToast('Sanificazione salvata!'); });
+        };
+
+        window.salvaServizioMobile = (e) => {
+            e.preventDefault();
+            tuttiTrasporti.push({ id: Date.now(), data: document.getElementById('svz-data').value, ora: document.getElementById('svz-ora').value, paziente: document.getElementById('svz-paziente').value, regime: document.getElementById('svz-regime').value, partenza: document.getElementById('svz-partenza').value, destinazione: document.getElementById('svz-destinazione').value, mezzoSelezionato: document.getElementById('svz-mezzo').value, mezzo: document.getElementById('svz-mezzo').value, statoServizio: "Programmato", stato: "Programmato", kmPartenza: 0, kmArrivo: 0 });
+            database.ref(dbRootPath + '/trasporti').set(tuttiTrasporti).then(() => { chiudiPagina('page-servizio'); document.getElementById('form-servizio').reset(); showToast('Servizio creato!'); });
+        };
+
+        window.salvaDialisiMobile = (e) => {
+            e.preventDefault();
+            const p = document.getElementById('dia-paziente').value, cf = document.getElementById('dia-cf') ? document.getElementById('dia-cf').value.toUpperCase() : "", mz = document.getElementById('dia-mezzo').value, ptz = document.getElementById('dia-partenza').value, arr = document.getElementById('dia-destinazione').value;
+            const dIn = new Date(document.getElementById('dia-inizio').value), dFi = new Date(document.getElementById('dia-fine').value);
+            if(dFi < dIn) return alert("Data fine precedente all'inizio!");
+            let curr = new Date(dIn); let count = 0;
+            while(curr <= dFi) {
+                if([1,3,5].includes(curr.getDay())) {
+                    curr.setMinutes(curr.getMinutes() - curr.getTimezoneOffset()); let dStr = curr.toISOString().split('T')[0];
+                    tuttiTrasporti.push({ id: Date.now() + count++, regime: "Convenzione ASL Umbria 2 (Dialisi)", paziente: p, cf: cf, data: dStr, ora: "07:00", partenza: ptz, destinazione: arr, mezzoSelezionato: mz, mezzo: mz, statoServizio: "Programmato", stato: "Programmato", kmPartenza: 0, kmArrivo: 15 });
+                }
+                curr.setDate(curr.getDate() + 1);
+            }
+            database.ref(dbRootPath + '/trasporti').set(tuttiTrasporti).then(() => { chiudiPagina('page-dialisi'); showToast(`Generati ${count} viaggi dialisi!`); });
+        };
+
+        window.salvaNCMobile = (e) => {
+            e.preventDefault();
+            nonConformita.push({ id: Date.now(), data: document.getElementById('nc-data').value, rilevatore: document.getElementById('nc-rilevatore').value, tipo: document.getElementById('nc-tipo').value, descrizione: document.getElementById('nc-descrizione').value, stato: 'Aperta' });
+            database.ref(dbRootPath + '/nonConformita').set(nonConformita).then(() => { chiudiPagina('page-nc'); document.getElementById('form-nc-mobile').reset(); showToast('Segnalazione NC inviata!'); });
+        };
+
+        window.stampaReportGiornalieroPDF = () => {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+            const dataFiltroCorrente = dateSettimana[offsetGiorno]; const dataFormattata = new Date(dataFiltroCorrente).toLocaleDateString('it-IT');
+
+            doc.setFontSize(12); doc.setTextColor(139, 92, 246); doc.text(societaInfo.nome, 14, 15);
+            doc.setFontSize(8); doc.setTextColor(100, 100, 100); doc.text(`${societaInfo.sede} | ${societaInfo.cfPiva}`, 14, 20); doc.text(`${societaInfo.runts} | ${societaInfo.autorizzazione}`, 14, 24);
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.text(`REPORT OPERATIVO GIORNALIERO - Data: ${dataFormattata}`, 14, 32); doc.text(`Operatore in servizio: ${volontarioCorrente}`, 14, 37);
+            doc.line(14, 40, 196, 40);
+
+            let serviziGiorno = tuttiTrasporti.filter(t => t.data === dataFiltroCorrente).sort((a, b) => (a.ora > b.ora) ? 1 : -1);
+            let bodyData = serviziGiorno.map(t => [t.ora, t.paziente, t.regime, t.partenza + ' ➔ ' + t.destinazione, t.mezzo || t.mezzoSelezionato, t.stato || t.statoServizio]);
+            
+            if(bodyData.length === 0) { bodyData = [["-", "Nessun servizio programmato per questa data", "-", "-", "-", "-"]]; }
+
+            doc.autoTable({ startY: 43, head: [['Ora', 'Paziente', 'Regime', 'Tratta', 'Mezzo', 'Stato']], body: bodyData, theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, styles: { fontSize: 8 } });
+            let finalY = doc.lastAutoTable.finalY + 15; doc.setFontSize(9); doc.text("Firma Operatore / Autista: ______________________", 14, finalY); doc.text("Firma Responsabile: ______________________", 110, finalY);
+
+            doc.save(`Report_Giornaliero_${dataFormattata.replace(/\//g, '-')}.pdf`); showToast('Report PDF Giornaliero Generato!');
+        };
+        
+        // --- FUNZIONE PER AGGIUNGERE EVENTO AL CALENDARIO MOBILE (.ics) ---
+        window.generaICSMobile = function(id) {
+            const t = tuttiTrasporti.find(x => String(x.id) === String(id));
+            if (!t) return;
+            
+            let titolo = 'Servizio CdA: ' + t.paziente;
+            let descrizione = 'Regime: ' + t.regime + '\\nPartenza: ' + t.partenza + '\\nDestinazione: ' + t.destinazione + '\\nMezzo: ' + (t.mezzoSelezionato || t.mezzo || 'Da definire');
+            let location = t.partenza;
+            
+            function formatICSDate(dataStr, oraStr, oreAggiuntive) {
+                let d = new Date(dataStr + 'T' + (oraStr || '08:00') + ':00');
+                d.setHours(d.getHours() + oreAggiuntive);
+                let pad = n => (n < 10 ? '0' : '') + n;
+                return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' + 
+                       pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+            }
+            
+            let inizioStr = formatICSDate(t.data, t.ora, 0);
+            let fineStr = formatICSDate(t.data, t.ora, 2); // Stima standard di 2 ore
+            
+            const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Cuore d'Argento//Mobile//IT\nBEGIN:VEVENT\nUID:${Date.now()}@cuoredargento.it\nDTSTAMP:${inizioStr}\nDTSTART:${inizioStr}\nDTEND:${fineStr}\nSUMMARY:${titolo}\nDESCRIPTION:${descrizione}\nLOCATION:${location}\nEND:VEVENT\nEND:VCALENDAR`;
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = titolo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.ics';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast("Aperto nel Calendario!");
+        };
+
+        window.scaricaTesseraPDFMobile = () => {
+            let v = volontari.find(vol => vol.nome === volontarioCorrente);
+            if(!v) { alert("Errore nel recupero dati volontario."); return; }
+            
+            try {
+                const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', [86, 54]); 
+                doc.setFillColor(139, 92, 246); doc.rect(0, 0, 54, 18, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont("helvetica", "bold");
+                let nomeEnte = "CUORE D'ARGENTO ODV"; let splitTitle = doc.splitTextToSize(nomeEnte, 50); doc.text(splitTitle, 27, 8, { align: 'center' });
+                doc.setFontSize(5.5); doc.setFont("helvetica", "normal"); doc.text("TESSERA DI RICONOSCIMENTO", 27, 14, { align: 'center' }); doc.text("Ai sensi del D.Lgs. 81/08 e s.m.i.", 27, 16.5, { align: 'center' });
+                if (v.foto) { try { doc.addImage(v.foto, 'JPEG', 17, 22, 20, 25); doc.setDrawColor(139, 92, 246); doc.setLineWidth(0.5); doc.rect(17, 22, 20, 25); } catch(e) {} } else { doc.setDrawColor(200, 200, 200); doc.setFillColor(240, 240, 240); doc.rect(17, 22, 20, 25, 'FD'); doc.setTextColor(150, 150, 150); doc.setFontSize(8); doc.text("FOTO", 27, 35, { align: 'center' }); }
+                doc.setTextColor(0, 0, 0); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text(v.nome || "Nome Non Inserito", 27, 53, { align: 'center' });
+                doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 100, 100); doc.text("Qualifica / Ruolo Operativo:", 27, 58, { align: 'center' });
+                doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(139, 92, 246); doc.text(v.ruolo || v.qualifica || "Volontario", 27, 62, { align: 'center' });
+                doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.text("Matricola / ID: " + (v.id || "000"), 4, 73);
+                let validitaStr = (v.quota) ? new Date(v.quota).toLocaleDateString('it-IT') : "Illimitata"; doc.text("Scadenza: " + validitaStr, 4, 77);
+                doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(28, 80, 50, 80); doc.setFontSize(5); doc.text("Firma del Titolare", 39, 83, { align: 'center' });
+                doc.save('Tessera_' + (v.nome || 'ID').replace(/\s+/g, '_') + '.pdf'); showToast("Tessera scaricata!");
+            } catch(e) { alert("Errore generazione PDF."); }
+        };
+
+        function showToast(m) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500); }
+    </script>
+</body>
+</html>
