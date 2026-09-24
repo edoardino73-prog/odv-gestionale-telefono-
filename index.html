@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+    <!-- GOOGLE MAPS API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeHOqzhD1Z5fCV6oleFEVPj9Cs5XMNn60&libraries=places" async defer></script>
 
     <style>
@@ -30,6 +31,7 @@
         
         body { background-color: var(--bg); color: var(--text-main); padding-bottom: env(safe-area-inset-bottom, 80px); max-width: 600px; margin: 0 auto; position: relative; overflow-x: hidden; min-height: 100vh; }
 
+        /* SCHERMATA LOGIN */
         #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; color: white; overflow-y: auto; }
         .login-card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 28px; color: var(--text-main); box-shadow: 0 20px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .login-logo { background: var(--primary); width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: white; box-shadow: 0 6px 15px rgba(139,92,246,0.4); }
@@ -108,7 +110,7 @@
         .card-actions-row { display: flex; gap: 8px; align-items: stretch; }
         .btn-call { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 14px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; width: 44px; text-decoration: none; transition: 0.2s; cursor: pointer;}
         .btn-call:active { transform: scale(0.95); background: #a7f3d0; }
-        .btn-maps { flex: 1; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 14px; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; justify-content: gap: 6px; text-decoration: none; padding: 12px 6px; transition: 0.2s; cursor: pointer; text-transform: uppercase;}
+        .btn-maps { flex: 1; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 14px; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; padding: 12px 6px; transition: 0.2s; cursor: pointer; text-transform: uppercase;}
         .btn-maps:active { background: #bae6fd; transform: scale(0.98); }
         .btn-action { flex: 2; width: 100%; padding: 14px; border-radius: 14px; border: none; font-size: 0.95rem; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(to right, var(--success), #059669); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; cursor: pointer;}
         .status-done { width: 100%; text-align: center; padding: 12px; background: var(--success-bg); color: var(--success); border-radius: 12px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;}
@@ -237,7 +239,7 @@
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
                 <!-- NAVIGAZIONE NATIVA per evitare nuove schede continue su Tablet -->
-                <button onclick="window.location.href='turni.html'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Portale Turni"><i class="fa-solid fa-user-clock"></i> Turni</button>
+                <button onclick="window.location.href='https://edoardino73-prog.github.io/odv-gestionale/turni.html'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Portale Turni"><i class="fa-solid fa-user-clock"></i> Turni</button>
                 <button onclick="stampaReportGiornalieroPDF()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Report PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                 <button onclick="apriTesseraVolontario()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Tessera Volontario"><i class="fa-solid fa-id-card"></i> Tessera</button>
                 <button onclick="eseguiLogout()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Blocca App"><i class="fa-solid fa-lock"></i></button>
@@ -1354,9 +1356,10 @@
 
         window.apriPannelloChiusura = function(id) {
             if (!getStatoPresenzaCorrente()) {
-                showToast("ACCESSO NEGATO: Timbra l'Inizio Turno per chiudere un servizio.", true);
+                showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per poter chiudere un servizio.", true);
                 return;
             }
+
             const t = tuttiTrasporti.find(function(x) { return String(x.id) === String(id); });
             if (!t) return;
             idServizioAttivo = id;
@@ -1440,11 +1443,13 @@
                 showToast("ACCESSO BLOCCATO: Documenti scaduti. Contatta la Direzione.", true);
                 return;
             }
+
             if (!getStatoPresenzaCorrente() && ['page-checklist', 'page-servizio', 'page-dialisi', 'page-sanificazione'].includes(pageId)) {
                 toggleFab();
                 showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per operare.", true);
                 return;
             }
+
             toggleFab(); 
             document.getElementById(pageId).classList.add('active'); 
             setTimeout(initGooglePlacesAutocomplete, 300); 
