@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8b5cf6">
+    <title>Operativo & Qualità - Cuore d'Argento</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeHOqzhD1Z5fCV6oleFEVPj9Cs5XMNn60&libraries=places" async defer></script>
+
+    <style>
+        :root {
+            --primary: #8b5cf6; --primary-light: #a78bfa; --primary-dark: #6d28d9; --bg: #f8fafc; 
+            --text-main: #1e293b; --text-muted: #64748b; --border: #e2e8f0;
+            --success: #10b981; --success-bg: #d1fae5; 
+            --warning: #f59e0b; --warning-bg: #fef3c7; --danger: #ef4444; --danger-bg: #fee2e2; --info: #3b82f6; --info-bg: #dbeafe;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent;}
+        
+        body { background-color: var(--bg); color: var(--text-main); padding-bottom: env(safe-area-inset-bottom, 80px); max-width: 600px; margin: 0 auto; position: relative; overflow-x: hidden; min-height: 100vh; }
+
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; color: white; overflow-y: auto; }
+        .login-card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 28px; color: var(--text-main); box-shadow: 0 20px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .login-logo { background: var(--primary); width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: white; box-shadow: 0 6px 15px rgba(139,92,246,0.4); }
+        .form-group-login { width: 100%; text-align: left; }
+        .form-group-login label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .pin-dots { display: flex; gap: 12px; margin: 5px 0; justify-content: center; }
+        .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--primary); background: transparent; transition: 0.2s; }
+        .pin-dot.filled { background: var(--primary); }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+        .pin-btn { background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 14px; font-size: 1.2rem; font-weight: 700; color: var(--text-main); cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .pin-btn:active { background: #e2e8f0; transform: scale(0.95); }
+        .pin-btn.action { background: #f1f5f9; color: var(--text-muted); font-size: 1rem; }
+
+        .pac-container { z-index: 999999 !important; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: 'Inter', sans-serif; background-color: #ffffff !important; }
+        .pac-item { padding: 12px 15px !important; cursor: pointer; font-size: 0.95rem; display: flex !important; align-items: center; gap: 10px; }
+        .pac-item:hover { background-color: #f1f5f9 !important; }
+        .pac-icon { display: none !important; }
+        .google-autocomplete { background-repeat: no-repeat !important; background-position: right 10px center !important; }
+
+        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 16px 20px; border-radius: 0 0 24px 24px; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .app-title { display: flex; align-items: center; gap: 12px; }
+        .app-logo { background: rgba(255,255,255,0.2); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; backdrop-filter: blur(5px);}
+        .app-text h1 { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 2px;}
+        .app-text span { font-size: 0.78rem; opacity: 0.9; font-weight: 500;}
+
+        .timbratura-bar { background: white; margin: 12px 20px 0 20px; padding: 12px 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .presenza-status { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 700; color: var(--text-main); }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); transition: 0.3s;}
+        .status-dot.attivo { background: var(--success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+        .btn-timbro { border: none; border-radius: 12px; padding: 10px 14px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-timbro.entra { background: var(--success); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        .btn-timbro.esci { background: var(--danger); color: white; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+
+        .shift-today-box { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; margin: 10px 20px 0 20px; padding: 14px 16px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15); }
+        .shift-today-info span { font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px; }
+        .shift-today-info strong { font-size: 0.95rem; font-weight: 800; display: block; }
+        .shift-today-badge { background: var(--primary); color: white; font-weight: 800; font-size: 0.85rem; padding: 6px 12px; border-radius: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+
+        .toggle-container { padding: 14px 0 10px 0; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .toggle-container::-webkit-scrollbar { display: none; }
+        .toggle-bg { display: inline-flex; gap: 10px; padding: 0 20px; }
+        .toggle-btn { padding: 9px 18px; background: #e2e8f0; border-radius: 20px; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+        .toggle-btn.active { color: white; background: var(--primary); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+
+        .feed { padding: 0 20px 80px 20px; display: flex; flex-direction: column; gap: 16px; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 14px; transition: 0.3s;}
+        .card.chiuso { background: #f8fafc; border: 1px solid var(--border); box-shadow: none; opacity: 0.9;}
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .time-badge { background: var(--info-bg); color: var(--info); font-size: 1.35rem; font-weight: 800; padding: 8px 12px; border-radius: 12px; letter-spacing: -0.5px;}
+        .card.chiuso .time-badge { background: var(--success-bg); color: var(--success); }
+        .regime-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: right;}
+        .patient-name { font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 4px; text-align: right;}
+        
+        .medical-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+        .badge-pill { font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-presidio { background: #ede9fe; color: var(--primary-dark); }
+        .badge-nre { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
+        .badge-ar { background: #e0f2fe; color: #0284c7; }
+
+        .card-notes { background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid var(--warning); padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; color: #78350f; line-height: 1.4; display: flex; gap: 8px; align-items: flex-start; }
+        .card-notes i { margin-top: 2px; font-size: 0.95rem; color: var(--warning); }
+
+        .divider { height: 1px; background: var(--border); border-radius: 1px; }
+        .route { display: flex; flex-direction: column; gap: 10px; }
+        .route-point { display: flex; gap: 12px; align-items: flex-start; }
+        .icon-col { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;}
+        .icon-col i { font-size: 1rem; }
+        .icon-col .line { width: 2px; height: 15px; background: var(--border); border-radius: 2px; }
+        .text-col { flex: 1; }
+        .text-col span { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;}
+        .text-col strong { font-size: 0.95rem; color: var(--text-main); font-weight: 700; line-height: 1.3; display: block;}
+        .crew-info { background: #f1f5f9; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;}
+        .crew-info div { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-main);}
+        .crew-info i { color: var(--text-muted); }
+        
+        .card-actions-row { display: flex; gap: 8px; align-items: stretch; }
+        .btn-call { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 14px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; width: 44px; text-decoration: none; transition: 0.2s; cursor: pointer;}
+        .btn-call:active { transform: scale(0.95); background: #a7f3d0; }
+        .btn-maps { flex: 1; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 14px; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; justify-content: gap: 6px; text-decoration: none; padding: 12px 6px; transition: 0.2s; cursor: pointer; text-transform: uppercase;}
+        .btn-maps:active { background: #bae6fd; transform: scale(0.98); }
+        .btn-action { flex: 2; width: 100%; padding: 14px; border-radius: 14px; border: none; font-size: 0.95rem; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(to right, var(--success), #059669); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; cursor: pointer;}
+        .status-done { width: 100%; text-align: center; padding: 12px; background: var(--success-bg); color: var(--success); border-radius: 12px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .status-locked { width: 100%; text-align: center; padding: 12px; background: #f1f5f9; color: var(--text-muted); border-radius: 12px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--border);}
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+        .empty-state i { font-size: 4rem; color: var(--border); margin-bottom: 15px; }
+
+        .fab-container { position: fixed; bottom: 25px; right: 20px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 15px;}
+        .fab-main { width: 65px; height: 65px; border-radius: 50%; background: var(--primary); color: white; border: none; font-size: 1.8rem; box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
+        .fab-menu { display: flex; flex-direction: column; gap: 12px; opacity: 0; pointer-events: none; transform: translateY(20px); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); align-items: flex-end;}
+        .fab-container.active .fab-menu { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .fab-container.active .fab-main { transform: rotate(45deg); background: var(--text-main); box-shadow: 0 6px 20px rgba(0,0,0,0.3);}
+        .fab-item { display: flex; align-items: center; gap: 12px; background: white; border: none; padding: 14px 20px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; color: var(--text-main); box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s;}
+        .fab-item i { font-size: 1.2rem; color: var(--primary); width: 20px; text-align: center;}
+        
+        .overlay-bg { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 899; opacity: 0; pointer-events: none; transition: 0.3s;}
+        .overlay-bg.active { opacity: 1; pointer-events: auto; }
+
+        .mobile-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 1500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column;}
+        .mobile-page.active { transform: translateX(0); }
+        .page-header { background: var(--primary); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; font-size: 1.2rem; font-weight: 800; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 10;}
+        .page-content { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        .form-section-title { font-size: 0.85rem; font-weight: 800; color: var(--primary); margin: 1.5rem 0 0.8rem 0; border-bottom: 2px solid var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .form-group { margin-bottom: 15px; position: relative;}
+        .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;}
+        .form-control { width: 100%; height: 48px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 0.95rem; outline: none; background: #f8fafc;}
+        .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(139,92,246,0.1);}
+        textarea.form-control { resize: vertical; min-height: 80px; height: auto; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: white; font-weight: 800; font-size: 1.05rem; border: none; border-radius: 14px; margin-top: 15px; margin-bottom: 25px; box-shadow: 0 6px 20px rgba(139,92,246,0.3); text-transform: uppercase; cursor: pointer;}
+        
+        .bottom-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: white; border-radius: 28px 28px 0 0; padding: 25px 20px env(safe-area-inset-bottom, 20px) 20px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); z-index: 2600; transition: bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); max-width: 600px; margin: 0 auto; max-height: 92vh; overflow-y: auto;}
+        .bottom-sheet.active { bottom: 0; }
+        .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 5px; margin: 0 auto 15px auto; }
+        .sheet-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; text-align: center;}
+        
+        .km-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .km-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+        .km-box span { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .km-input-field { width: 100%; font-size: 1.5rem; font-weight: 800; color: var(--primary); text-align: center; border: none; background: transparent; outline: none; margin-top: 4px; border-bottom: 2px solid var(--border); }
+        .km-diff-badge { grid-column: span 2; background: #e0f2fe; color: #0369a1; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; text-align: center; }
+
+        .upload-btn { width: 100%; background: #e2e8f0; color: var(--text-main); padding: 14px; border-radius: 12px; border: 1px dashed var(--text-muted); font-weight: 700; text-align: center; margin-bottom: 15px; display: block; cursor: pointer;}
+        .upload-btn.loaded { background: var(--success-bg); color: var(--success); border-style: solid; border-color: var(--success);}
+        .sig-container { border: 2px solid var(--border); border-radius: 12px; background: #f8fafc; margin-bottom: 15px; position: relative; overflow: hidden;}
+        .sig-canvas { width: 100%; height: 180px; display: block; touch-action: none; }
+        .sig-clear { position: absolute; top: 10px; right: 10px; background: white; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; color: var(--text-muted);}
+
+        .sheet-buttons { display: flex; gap: 12px; margin-top: 10px;}
+        .btn-cancel { flex: 1; padding: 15px; border-radius: 14px; border: none; background: var(--bg); color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer;}
+        .btn-confirm { flex: 2; padding: 15px; border-radius: 14px; border: none; background: var(--primary); color: white; font-weight: 800; font-size: 0.95rem; box-shadow: 0 6px 15px rgba(139, 92, 246, 0.3); cursor: pointer;}
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 2500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; padding: 20px; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .tessera-badge { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; position: relative; margin: 0 auto; border: 1px solid var(--border); width: 100%; max-width: 320px; }
+        .tessera-header { background: var(--primary); padding: 20px 10px; color: white; }
+        .tessera-body { padding: 25px 20px; background: white;}
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1e293b; color: white; padding: 14px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 600; z-index: 3000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); opacity: 0; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; align-items: center; gap: 10px; white-space: nowrap;}
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <datalist id="destinazioni-asl">
+        <option value="Ospedale S. Maria di Terni">
+        <option value="Ospedale di Narni">
+        <option value="Ospedale di Amelia">
+        <option value="Ospedale S. Giovanni Battista - Foligno">
+        <option value="Ospedale S. Matteo degli Infermi - Spoleto">
+        <option value="Sede ASL Umbria 2">
+    </datalist>
+    <datalist id="lista-pazienti"></datalist>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-logo"><i class="fa-solid fa-truck-medical"></i></div>
+            <div style="text-align:center;">
+                <h2 style="font-size:1.3rem; font-weight:800; color:var(--text-main);">Cuore d'Argento</h2>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Seleziona il tuo nome e inserisci il PIN</p>
+            </div>
+            
+            <div class="form-group-login">
+                <label>Seleziona Operatore / Volontario</label>
+                <select id="select-login-volontario" class="form-control" style="padding:10px; font-size:0.95rem;">
+                    <option value="">Caricamento volontari da Firebase...</option>
+                </select>
+            </div>
+
+            <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-top:5px;">Inserisci PIN (Default: 1234)</div>
+            <div class="pin-dots">
+                <div class="pin-dot" id="dot-0"></div>
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+            </div>
+
+            <div class="pin-pad">
+                <button class="pin-btn" onclick="aggiungiDigit(1)">1</button>
+                <button class="pin-btn" onclick="aggiungiDigit(2)">2</button>
+                <button class="pin-btn" onclick="aggiungiDigit(3)">3</button>
+                <button class="pin-btn" onclick="aggiungiDigit(4)">4</button>
+                <button class="pin-btn" onclick="aggiungiDigit(5)">5</button>
+                <button class="pin-btn" onclick="aggiungiDigit(6)">6</button>
+                <button class="pin-btn" onclick="aggiungiDigit(7)">7</button>
+                <button class="pin-btn" onclick="aggiungiDigit(8)">8</button>
+                <button class="pin-btn" onclick="aggiungiDigit(9)">9</button>
+                <button class="pin-btn action" onclick="resetPin()"><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="pin-btn" onclick="aggiungiDigit(0)">0</button>
+                <button class="pin-btn action" onclick="cancellaDigit()"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+            <div id="login-error" style="color:var(--danger); font-size:0.85rem; text-align:center; display:none;">Seleziona un operatore o PIN errato.</div>
+        </div>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <header>
+            <div class="app-title">
+                <div class="app-logo"><i class="fa-solid fa-truck-medical"></i></div>
+                <div class="app-text">
+                    <h1>Cuore d'Argento</h1>
+                    <span id="data-header">Caricamento...</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <!-- NAVIGAZIONE NATIVA per evitare nuove schede continue su Tablet -->
+                <button onclick="window.location.href='turni.html'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Portale Turni"><i class="fa-solid fa-user-clock"></i> Turni</button>
+                <button onclick="stampaReportGiornalieroPDF()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Report PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button onclick="apriTesseraVolontario()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Tessera Volontario"><i class="fa-solid fa-id-card"></i> Tessera</button>
+                <button onclick="eseguiLogout()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Blocca App"><i class="fa-solid fa-lock"></i></button>
+            </div>
+        </header>
+
+        <div id="accreditamento-banner" style="display:none; padding:10px 20px; font-size:0.8rem; font-weight:700; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.05); z-index:90; position:relative;">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span id="accreditamento-text"></span>
+        </div>
+
+        <div class="timbratura-bar" id="timbratore-widget">
+            <div class="presenza-status">
+                <div class="status-dot" id="dot-presenza"></div>
+                <div>
+                    <span id="txt-stato-presenza" style="display:block; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Stato Operatore</span>
+                    <strong id="val-stato-presenza">Fuori Servizio</strong>
+                </div>
+            </div>
+            <button type="button" id="btn-toggle-presenza" class="btn-timbro entra" onclick="toggleTimbraturaPresenza()">
+                <i class="fa-solid fa-right-to-bracket"></i> Inizia Turno
+            </button>
+        </div>
+
+        <div class="shift-today-box" id="widget-turno-oggi">
+            <div class="shift-today-info">
+                <span>Turno Assegnato Oggi:</span>
+                <strong id="turno-oggi-titolo">Nessun turno assegnato</strong>
+                <small id="turno-oggi-dettaglio" style="color:#cbd5e1; font-size:0.72rem; display:block; margin-top:2px;">Controlla la centrale operativa</small>
+            </div>
+            <div class="shift-today-badge" id="turno-oggi-sigla">
+                <i class="fa-solid fa-clock"></i> <span id="turno-sigla-val">OFF</span>
+            </div>
+        </div>
+
+        <div class="toggle-container">
+            <div class="toggle-bg" id="day-tabs-container"></div>
+        </div>
+
+        <div class="feed" id="lista-servizi">
+            <div class="empty-state">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <h3>Sincronizzazione...</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay-bg" id="fab-overlay" onclick="toggleFab()"></div>
+    <div class="fab-container" id="fab-container" style="display:none;">
+        <div class="fab-menu">
+            <button class="fab-item" onclick="apriPagina('page-presenze')"><i class="fa-solid fa-user-check" style="color:var(--success);"></i> Registro Presenze</button>
+            <button class="fab-item" onclick="apriPagina('page-continuita')"><i class="fa-solid fa-car-burst" style="color:var(--danger);"></i> Guasto / Emergenza</button>
+            <button class="fab-item" onclick="apriPagina('page-checklist')"><i class="fa-solid fa-clipboard-check"></i> Checklist Inizio Turno</button>
+            <button class="fab-item" onclick="apriPagina('page-sanificazione')"><i class="fa-solid fa-spray-can-sparkles"></i> Log Sanificazione PMC</button>
+            <button class="fab-item" onclick="apriPagina('page-servizio')"><i class="fa-solid fa-truck-medical"></i> Nuovo Servizio</button>
+            <button class="fab-item" onclick="apriPagina('page-dialisi')"><i class="fa-solid fa-calendar-days"></i> Pianifica Dialisi</button>
+            <button class="fab-item" onclick="apriPagina('page-nc')"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> Segnala NC / Reclamo</button>
+        </div>
+        <button class="fab-main" onclick="toggleFab()"><i class="fa-solid fa-plus"></i></button>
+    </div>
+
+    <div class="modal-overlay" id="modal-tessera" onclick="chiudiTesseraVolontario()">
+        <div style="width: 100%; max-width: 340px; padding: 15px; display: flex; flex-direction: column; gap: 15px;" onclick="event.stopPropagation()">
+            <div class="tessera-badge">
+                <div class="tessera-header">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:5px;">
+                        <i class="fa-solid fa-file-medical" style="font-size:1.5rem;"></i>
+                        <span style="font-weight:800; font-size:1.1rem;">CUORE D'ARGENTO</span>
+                    </div>
+                    <h3 style="font-size: 0.8rem; margin: 0; font-weight:500;">Tessera di Riconoscimento</h3>
+                </div>
+                <div class="tessera-body">
+                    <img id="tessera-foto" src="https://via.placeholder.com/150" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                    <h2 id="tessera-nome" style="font-size: 1.3rem; color: var(--text-main); margin-bottom: 5px; font-weight:800;">-</h2>
+                    <div id="tessera-ruolo" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; text-transform: uppercase; margin-bottom: 20px;">-</div>
+                    <div id="qrcode-container-mobile" style="display:flex; justify-content:center; align-items:center; min-height: 110px; margin-bottom:15px;"></div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <span>ID: <strong id="tessera-id" style="color:var(--text-main);">-</strong></span>
+                        <span>Scad: <strong id="tessera-stato-quota" style="color:var(--success);">-</strong></span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-submit" onclick="scaricaTesseraPDFMobile()" style="margin: 0; background: var(--info); border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size:1rem;"><i class="fa-solid fa-file-pdf"></i> Stampa Tessera (81/08)</button>
+            <button type="button" class="btn-submit" onclick="chiudiTesseraVolontario()" style="margin: 0; background: var(--text-main); border-radius: 20px; font-size:1rem;">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- PAGINA PRESENZE -->
+    <div class="mobile-page" id="page-presenze">
+        <div class="page-header" style="background:var(--success);"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-presenze')"></i><span>Registro Ingressi / Uscite</span></div>
+        <div class="page-content">
+            <div style="background:#f8fafc; border:1px solid var(--border); padding:16px; border-radius:14px; margin-bottom:20px; text-align:center;">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Operatore Attuale</span>
+                <h3 id="presenze-vol-nome" style="font-size:1.2rem; color:var(--text-main); margin-top:2px;">-</h3>
+                <div id="presenze-status-box" style="margin-top:10px; font-size:0.85rem; font-weight:700; color:var(--danger);">Non in servizio</div>
+            </div>
+            
+            <div class="form-section-title"><i class="fa-solid fa-list-check"></i> Storico Timbrature Oggi</div>
+            <div id="lista-presenze-oggi" style="display:flex; flex-direction:column; gap:10px;">
+                <p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:20px;">Nessuna timbratura registrata oggi.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGINA CONTINUITÀ -->
+    <div class="mobile-page" id="page-continuita">
+        <div class="page-header" style="background:var(--danger);"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-continuita')"></i><span>Segnala Guasto/Emergenza</span></div>
+        <div class="page-content">
+            <form id="form-continuita" onsubmit="salvaContinuitaMobile(event)">
+                <div class="form-group"><label>Data Evento</label><input type="date" id="cont-data" class="form-control" required></div>
+                <div class="form-group"><label>Tipo Evento</label><select id="cont-evento" class="form-control" required><option value="Guasto Mezzo">Guasto Mezzo</option><option value="Assenza Operatore">Assenza Operatore</option><option value="Emergenza Straordinaria">Emergenza Straordinaria</option></select></div>
+                <div class="form-group"><label>Mezzo Coinvolto</label><select id="cont-coinvolto" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Azione Immediata</label><textarea id="cont-azione" class="form-control" required placeholder="Cosa è stato fatto sul momento..."></textarea></div>
+                <input type="hidden" id="cont-esito" value="In Gestione">
+                <div class="form-group"><label>Note Aggiuntive</label><textarea id="cont-note" class="form-control" placeholder="Dettagli del problema..."></textarea></div>
+                <button type="submit" class="btn-submit" style="background:var(--danger);">Invia Segnalazione Urgente</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA CHECKLIST -->
+    <div class="mobile-page" id="page-checklist">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-checklist')"></i><span>Checklist Inizio Turno</span></div>
+        <div class="page-content">
+            <form id="form-checklist" onsubmit="salvaChecklistMobile(event)">
+                <div class="form-section-title"><i class="fa-solid fa-truck"></i> Controlli Veicolo</div>
+                <div class="form-group"><label>Data e Ora</label><input type="datetime-local" id="chk-data" class="form-control" required></div>
+                <div class="form-group"><label>Mezzo Preso in Carico</label><select id="chk-mezzo" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Responsabile (Autista)</label><select id="chk-autista" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Chilometri Attuali del Mezzo</label><input type="number" id="chk-km" class="form-control" placeholder="Es. 120500" required></div>
+                <div class="form-group"><label>Livello Carburante</label><select id="chk-carburante" class="form-control" required><option value="Pieno">Pieno</option><option value="3/4">3/4 di Serbatoio</option><option value="1/2">Metà (1/2)</option><option value="Riserva">In Riserva ⚠️</option></select></div>
+                
+                <div class="form-section-title"><i class="fa-solid fa-heart-pulse"></i> Vano Sanitario & Elettromedicali</div>
+                <div class="form-group"><label>Sirene e Lampeggianti</label><select id="chk-sirene" class="form-control" required><option value="OK">Funzionanti (OK)</option><option value="Anomalia">Anomalia / KO</option></select></div>
+                <div class="form-group"><label>Barella Principale</label><select id="chk-barella" class="form-control" required><option value="OK">Ancoraggio e Movimenti OK</option><option value="KO">Problemi Bloccaggio (KO)</option></select></div>
+                <div class="form-group"><label>Zaino Soccorso</label><select id="chk-zaino" class="form-control" required><option value="OK">Completo e Sigillato</option><option value="Mancante/Aperto">Aperto / Materiale Mancante</option></select></div>
+                <div class="form-group"><label>DAE (Defibrillatore)</label><select id="chk-dae" class="form-control" required><option value="OK">Autodiagnosi OK (Spia Verde)</option><option value="KO">Spia Rossa / Allarme / Assente</option></select></div>
+                <div class="form-group">
+                    <label>Bombole O2 (Pressione Manometro)</label>
+                    <select id="chk-o2" class="form-control" required>
+                        <option value="> 100 bar (OK)">Pressione > 100 bar (Piena/Conforme OK)</option>
+                        <option value="50-100 bar">Pressione 50 - 100 bar (Livello Medio)</option>
+                        <option value="Riserva < 50 bar (KO)">In Riserva < 50 bar (Da Ricaricare ⚠️)</option>
+                        <option value="Assente/Guasto">Manometro / Bombola Assente o Guasta</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Note / Anomalie</label><textarea id="chk-note" class="form-control" placeholder="Segnala qui eventuali problemi ai presidi..."></textarea></div>
+                <button type="submit" class="btn-submit">Salva Checklist</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA SANIFICAZIONE -->
+    <div class="mobile-page" id="page-sanificazione">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-sanificazione')"></i><span>Log Sanificazione PMC</span></div>
+        <div class="page-content">
+            <form id="form-sanificazione" onsubmit="salvaSanificazioneMobile(event)">
+                <div class="form-group"><label>Data Intervento</label><input type="date" id="san-data" class="form-control" required></div>
+                <div class="form-group"><label>Mezzo Sanificato</label><select id="san-mezzo" class="form-control select-mezzi" required></select></div>
+                <div class="form-group"><label>Operatore Esecutore</label><select id="san-operatore" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Tipo Intervento</label><select id="san-tipo" class="form-control" required><option value="Ordinaria (Fine Turno)">Ordinaria (Fine Turno)</option><option value="Straordinaria (Rischio Infettivo)">Straordinaria (Rischio Infettivo)</option><option value="Trattamento Ozono / Nebulizzazione">Trattamento Ozono / Nebulizzazione</option></select></div>
+                <div class="form-group">
+                    <label>Disinfettante / Presidio Medico Chirurgico (PMC)</label>
+                    <select id="san-pmc" class="form-control" required>
+                        <option value="Clorossidante Elettrolitico (PMC)">Clorossidante Elettrolitico (PMC Reg. Min. Sal.)</option>
+                        <option value="Sali Quaternari di Ammonio (PMC)">Sali Quaternari di Ammonio (PMC Superfici)</option>
+                        <option value="Alcool 70% Idroalcolico">Alcool Etilico 70% Idroalcolico</option>
+                        <option value="Perossido di Idrogeno Nebulizzato">Perossido di Idrogeno Nebulizzato</option>
+                        <option value="Altro Disinfettante Ospedaliero">Altro Disinfettante Ospedaliero</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Tempo di Contatto / Note</label><textarea id="san-note" class="form-control" placeholder="Es. Tempo di contatto 15 min, aerazione vano completata..."></textarea></div>
+                <button type="submit" class="btn-submit">Registra Sanificazione</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA NUOVO SERVIZIO -->
+    <div class="mobile-page" id="page-servizio">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-servizio')"></i><span>Inserisci Nuovo Servizio</span></div>
+        <div class="page-content">
+            <form id="form-servizio" onsubmit="salvaServizioMobile(event)">
+                <div class="form-section-title"><i class="fa-solid fa-file-contract"></i> Regime & Anagrafica</div>
+                <div class="form-group">
+                    <label>Regime / Convenzione</label>
+                    <select id="svz-regime" class="form-control" required>
+                        <option value="Convenzione ASL Umbria 2">Convenzione ASL Umbria 2</option>
+                        <option value="Privato / Tariffa Sociale">Privato / Tariffa Sociale</option>
+                        <option value="Emergenza / 118">Emergenza / 118</option>
+                        <option value="Convenzione ASL Umbria 2 (Dialisi)">Convenzione ASL Umbria 2 (Dialisi)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Paziente</label><input type="text" id="svz-paziente" list="lista-pazienti" class="form-control" required placeholder="Nome e Cognome"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Codice Fiscale</label><input type="text" id="svz-cf" class="form-control" placeholder="CF Paziente" style="text-transform: uppercase;"></div>
+                    <div class="form-group"><label>NRE / Autorizzazione</label><input type="text" id="svz-nre" class="form-control" placeholder="N. NRE o Ricetta"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Data Servizio</label><input type="date" id="svz-data" class="form-control" required></div>
+                    <div class="form-group"><label>Ora Partenza</label><input type="time" id="svz-ora" class="form-control" required></div>
+                </div>
+                <div class="form-group"><label>Telefono Paziente / Contatto</label><input type="tel" id="svz-telefono" class="form-control" placeholder="Es. 3331234567"></div>
+
+                <div class="form-section-title"><i class="fa-solid fa-route"></i> Itinerario & Percorso</div>
+                <div class="form-group"><label>Indirizzo Partenza</label><input type="text" id="svz-partenza" class="form-control google-autocomplete" required placeholder="Via, Città..." autocomplete="off"></div>
+                <div class="form-group"><label>Eventuali Soste Intermedie</label><input type="text" id="svz-soste" class="form-control google-autocomplete" placeholder="Eventuali fermate intermedie" autocomplete="off"></div>
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin-bottom:0;">Indirizzo Destinazione</label>
+                        <button type="button" onclick="apriPercorsoMapsRapido('svz-partenza', 'svz-destinazione', 'svz-soste')" style="background:none; border:none; padding:0; font-size:0.75rem; color:var(--info); font-weight:700; cursor:pointer;"><i class="fa-solid fa-route"></i> Visualizza Percorso Maps</button>
+                    </div>
+                    <input type="text" id="svz-destinazione" list="destinazioni-asl" class="form-control google-autocomplete" required placeholder="Ospedale, Centro..." autocomplete="off">
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-road"></i> Chilometraggio & Spese</div>
+                <div class="form-row">
+                    <div class="form-group"><label>KM Partenza Mezzo</label><input type="number" id="svz-kmPartenza" class="form-control" value="0"></div>
+                    <div class="form-group"><label>KM Arrivo Mezzo</label><input type="number" id="svz-kmArrivo" class="form-control" value="0"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Spese Anticipate (€)</label><input type="number" step="0.01" id="svz-speseImporto" class="form-control" value="0.00"></div>
+                    <div class="form-group"><label>Causale Spesa</label><input type="text" id="svz-speseNota" class="form-control" placeholder="Es. Parcheggio, pedaggio..."></div>
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-wheelchair"></i> Dettagli Mobilità</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Piano</label><input type="text" id="svz-piano" class="form-control" placeholder="Es. 2° piano"></div>
+                    <div class="form-group"><label>Ascensore</label><select id="svz-ascensore" class="form-control"><option value="Sì">Sì</option><option value="No">No</option><option value="Stretto">Stretto</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Deambulante</label><select id="svz-deambulante" class="form-control"><option value="Sì">Sì</option><option value="No">No</option></select></div>
+                    <div class="form-group"><label>Sedia a Rotelle</label><select id="svz-sedia" class="form-control"><option value="No">No</option><option value="Sì (Pieghevole)">Sì (Pieghevole)</option><option value="Sì (Carrozzina propria)">Sì (Carrozzina propria)</option></select></div>
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-users"></i> Assegnazione Risorse</div>
+                <div class="form-group"><label>Mezzo Assegnato</label><select id="svz-mezzoSelezionato" class="form-control select-mezzi" required></select></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Autista</label><select id="svz-autistaSelezionato" class="form-control select-volontari"></select></div>
+                    <div class="form-group"><label>Soccorritore</label><select id="svz-soccorritoreSelezionato" class="form-control select-volontari"></select></div>
+                </div>
+                <div class="form-group"><label>Stato Servizio</label><select id="svz-statoServizio" class="form-control"><option value="Programmato">Programmato</option><option value="In Corso">In Corso</option><option value="Completato">Completato</option><option value="Da Rendicontare">Da Rendicontare</option></select></div>
+
+                <div class="form-section-title"><i class="fa-solid fa-arrows-split-up-and-left"></i> Andata e Ritorno</div>
+                <div class="form-group">
+                    <label>Tipologia Corsa</label>
+                    <select id="svz-tipo-corsa" class="form-control" onchange="toggleRitornoCampi('svz')">
+                        <option value="Sola Andata">Sola Andata</option>
+                        <option value="Andata e Ritorno">Andata e Ritorno (Genera viaggio di ritorno)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="svz-ritorno-wrap" style="display:none;">
+                    <label>Ora Stimata di Ritorno</label>
+                    <input type="time" id="svz-ora-ritorno" class="form-control" value="12:00">
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-note-sticky"></i> Note Operative</div>
+                <div class="form-group"><textarea id="svz-note" class="form-control" placeholder="Istruzioni per l'equipaggio, citofono, cartelle cliniche..."></textarea></div>
+
+                <button type="submit" class="btn-submit"><i class="fa-solid fa-save"></i> Salva Servizio</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA DIALISI -->
+    <div class="mobile-page" id="page-dialisi">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-dialisi')"></i><span>Pianificazione Ciclo Dialisi</span></div>
+        <div class="page-content">
+            <form id="form-dialisi" onsubmit="salvaDialisiMobile(event)">
+                <div class="form-section-title"><i class="fa-solid fa-user"></i> Paziente Dializzato</div>
+                <div class="form-group"><label>Paziente</label><input type="text" id="dia-paziente" list="lista-pazienti" class="form-control" required placeholder="Nome e Cognome"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Codice Fiscale</label><input type="text" id="dia-cf" class="form-control" placeholder="CF Paziente" style="text-transform: uppercase;"></div>
+                    <div class="form-group"><label>Mezzo Assegnato</label><select id="dia-mezzo" class="form-control select-mezzi" required></select></div>
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-route"></i> Itinerario Dialisi</div>
+                <div class="form-group"><label>Indirizzo Partenza (Domicilio)</label><input type="text" id="dia-partenza" class="form-control google-autocomplete" required placeholder="Via, Città..." autocomplete="off"></div>
+                <div class="form-group"><label>Eventuale Tappa / Note Partenza</label><input type="text" id="dia-tappa" class="form-control google-autocomplete" placeholder="Es. Reparto / Scala" autocomplete="off"></div>
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin-bottom:0;">Centro Dialisi (Arrivo)</label>
+                        <button type="button" onclick="apriPercorsoMapsRapido('dia-partenza', 'dia-destinazione', 'dia-tappa')" style="background:none; border:none; padding:0; font-size:0.75rem; color:var(--info); font-weight:700; cursor:pointer;"><i class="fa-solid fa-route"></i> Visualizza Percorso</button>
+                    </div>
+                    <input type="text" id="dia-destinazione" list="destinazioni-asl" class="form-control google-autocomplete" required placeholder="Es. Ospedale S. Maria di Terni" autocomplete="off">
+                </div>
+
+                <div class="form-section-title"><i class="fa-solid fa-clock"></i> Programmazione Periodo & Orari</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Data Inizio Ciclo</label><input type="date" id="dia-inizio" class="form-control" required></div>
+                    <div class="form-group"><label>Data Fine Ciclo</label><input type="date" id="dia-fine" class="form-control" required></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Giorni della Settimana</label>
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:5px; background:#f8fafc; padding:12px; border:1px solid var(--border); border-radius:12px;">
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="1" checked style="accent-color:var(--primary); transform:scale(1.2);"> Lun</label>
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="2" style="accent-color:var(--primary); transform:scale(1.2);"> Mar</label>
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="3" checked style="accent-color:var(--primary); transform:scale(1.2);"> Mer</label>
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="4" style="accent-color:var(--primary); transform:scale(1.2);"> Gio</label>
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="5" checked style="accent-color:var(--primary); transform:scale(1.2);"> Ven</label>
+                        <label style="text-transform:none; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="d-giorni" value="6" style="accent-color:var(--primary); transform:scale(1.2);"> Sab</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Turno Ospedaliero</label>
+                    <select id="dia-turno" class="form-control">
+                        <option value="mattina">Mattina (Andata 07:00 / Ritorno 12:00)</option>
+                        <option value="pomeriggio">Pomeriggio (Andata 13:00 / Ritorno 17:00)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group"><label>KM Stimati Andata</label><input type="number" id="dia-km-andata" class="form-control" value="15"></div>
+                    <div class="form-group"><label>KM Stimati Ritorno</label><input type="number" id="dia-km-ritorno" class="form-control" value="15"></div>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background:var(--info);"><i class="fa-solid fa-calendar-plus"></i> Genera Viaggi</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGINA SEGNALAZIONE NC -->
+    <div class="mobile-page" id="page-nc">
+        <div class="page-header"><i class="fa-solid fa-arrow-left" onclick="chiudiPagina('page-nc')"></i><span>Segnala NC o Reclamo</span></div>
+        <div class="page-content">
+            <form id="form-nc-mobile" onsubmit="salvaNCMobile(event)">
+                <div class="form-group"><label>Data</label><input type="date" id="nc-data" class="form-control" required></div>
+                <div class="form-group"><label>Operatore Segnalante</label><select id="nc-rilevatore" class="form-control select-volontari" required></select></div>
+                <div class="form-group"><label>Tipologia</label><select id="nc-tipo" class="form-control" required><option value="Reclamo da Paziente/ASL">Reclamo da Paziente/ASL</option><option value="Guasto Mezzo">Guasto Mezzo</option></select></div>
+                <div class="form-group"><label>Descrizione</label><textarea id="nc-descrizione" class="form-control" required placeholder="Dettagli..."></textarea></div>
+                <button type="submit" class="btn-submit" style="background:var(--warning);">Invia a Centrale</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- BOTTOM SHEET CHIUSURA SERVIZIO -->
+    <div class="modal-overlay" id="overlay" onclick="chiudiModaleBottomSheet()"></div>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Chiusura Servizio</div>
+        <div style="text-align: center; color: var(--text-muted); font-weight: 700; margin-bottom: 15px;" id="sheet-patient-name">Paziente</div>
+        
+        <div class="km-grid">
+            <div class="km-box">
+                <span>KM Inizio Missione</span>
+                <input type="number" id="km-partenza-input" class="km-input-field" placeholder="0" inputmode="numeric" oninput="calcolaKmPercorsi()">
+            </div>
+            <div class="km-box">
+                <span>KM Rientro Missione</span>
+                <input type="number" id="km-arrivo-input" class="km-input-field" placeholder="0" inputmode="numeric" oninput="calcolaKmPercorsi()">
+            </div>
+            <div class="km-diff-badge" id="km-totali-badge">Distanza Percorsa: 0 km</div>
+        </div>
+        
+        <label for="foto-upload" id="lbl-foto" class="upload-btn"><i class="fa-solid fa-camera"></i> Allega Scontrino / Ricevuta</label>
+        <input type="file" id="foto-upload" accept="image/*" capture="environment" style="display:none;">
+
+        <div style="margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
+            <input type="checkbox" id="chk-gdpr-firma" style="margin-top:3px; accent-color:var(--primary); transform:scale(1.2);" required checked>
+            <label for="chk-gdpr-firma" style="font-size:0.75rem; color:var(--text-muted); line-height:1.3;">
+                Attesto l'avvenuta esecuzione del trasporto e l'acquisizione del consenso informato al trattamento dei dati personali (Reg. UE 2016/679).
+            </label>
+        </div>
+
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display:block;">Firma Paziente / Infermiere</label>
+        <div class="sig-container">
+            <button type="button" class="sig-clear" onclick="pulisciFirma()">Cancella</button>
+            <canvas id="signature-pad" class="sig-canvas"></canvas>
+        </div>
+        
+        <div class="sheet-buttons">
+            <button class="btn-cancel" onclick="chiudiModaleBottomSheet()">Annulla</button>
+            <button class="btn-confirm" onclick="confermaChiusura()"><i class="fa-solid fa-check"></i> Salva e Chiudi</button>
+        </div>
+    </div>
+
+    <!-- MODALE CUSTOMER SATISFACTION ISO 9001 -->
+    <div class="modal-overlay" id="modal-cs-qr" onclick="chiudiModalCS()">
+        <div style="width: 100%; max-width: 340px; padding: 25px 20px; background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+            <div style="background: var(--info-bg); color: var(--info); width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: -5px;">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <h2 style="font-size: 1.3rem; color: var(--text-main); font-weight: 800;">Servizio Chiuso!</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">Fai inquadrare questo QR Code al paziente per il questionario di conformità ISO 9001.</p>
+            <div id="qr-cs-container" style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border);"></div>
+            <button type="button" class="btn-submit" onclick="chiudiModalCS()" style="margin-top: 10px; background:var(--text-main); box-shadow:none;">Torna al Tabellone</button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICHE -->
+    <div id="toast"><i class="fa-solid fa-circle-check" style="color:#4ade80"></i> <span id="toast-msg">Operazione completata!</span></div>
+
+    <script>
+        const URL_QUESTIONARIO_CS = "https://docs.google.com/forms/d/e/1FAIpQLSerxr5ggAvhPCAPKwkPGKkm5tbjsDYWIiPlguYWskejUX7g-w/viewform?usp=sharing&ouid=117117615506418942572";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhi3SRh2mDqz8_T03xYVq4XtcRiAL7IF0",
+            authDomain: "cuore-d-argento.firebaseapp.com",
+            databaseURL: "https://cuore-d-argento-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "cuore-d-argento",
+            storageBucket: "cuore-d-argento.firebasestorage.app",
+            messagingSenderId: "271690439864",
+            appId: "1:271690439864:web:17b36ef2c5ab4263d3684d"
+        };
+
+        if (!firebase.apps.length) { 
+            firebase.initializeApp(firebaseConfig); 
+        }
+        const database = firebase.database();
+
+        let PIN_CORRETTO = "1234";
+        let pinInserito = "";
+        let volontarioCorrente = "";
+        let volontarioBloccato = false; 
+        let dbRootPath = 'cuore_argento_db'; 
+
+        const societaInfo = {
+            nome: "Associazione di Volontariato Cuore d'Argento ODV",
+            sede: "Via della Stazione n. 51 – 05035 Narni Scalo (TR)",
+            cfPiva: "C.F. / P.IVA: 01725470551",
+            runts: "RUNTS Det. n. 870/2025 Regione Umbria",
+            autorizzazione: "Aut. Esercizio n. 8642 del 19/08/2025"
+        };
+
+        let tuttiTrasporti = [], sanificazioni = [], mezzi = [], volontari = [], checklists = [], nonConformita = [], elettromedicali = [], continuitaServizio = [], turni = [], presenze = [];
+        let offsetGiorno = 0, dateSettimana = [], idServizioAttivo = null;
+        let fotoScontrinoBase64 = null;
+        let qrCSGenerato = false; 
+
+        function getDbRef(subPath) {
+            let cleanSub = subPath ? subPath.replace(/^\/+/, '') : '';
+            return database.ref(dbRootPath + '/' + cleanSub);
+        }
+
+        database.ref(dbRootPath).on('value', function(snapshot) {
+            const data = snapshot.val() || {};
+
+            volontari = estraiDati(data.volontari);
+            tuttiTrasporti = estraiDati(data.trasporti);
+            sanificazioni = estraiDati(data.sanificazioni);
+            mezzi = estraiDati(data.mezzi);
+            checklists = estraiDati(data.checklists);
+            nonConformita = estraiDati(data.nonConformita);
+            elettromedicali = estraiDati(data.elettromedicali); 
+            continuitaServizio = estraiDati(data.continuitaServizio);
+            turni = estraiDati(data.turni);
+            presenze = estraiDati(data.presenze);
+            
+            popolaSelectLoginVolontari();
+            aggiornaDropdownListe();
+            aggiornaListaPazientiDatalist();
+            
+            if(document.getElementById('main-app').style.display === 'block') {
+                renderServizi();
+                aggiornaStatoPresenzaUI();
+                aggiornaWidgetTurnoOggi();
+                renderRegistroPresenze();
+            }
+        }, function(error) {
+            console.error("Firebase Read Error:", error);
+            document.getElementById('select-login-volontario').innerHTML = '<option value="">Errore di connessione o permesso negato</option>';
+        });
+
+        function estraiDati(nodo) {
+            if (!nodo) return [];
+            if (Array.isArray(nodo)) { 
+                return nodo.map(function(item, idx) {
+                    if (item && typeof item === 'object') {
+                        if (!item.id && item.id !== 0) item.id = String(idx);
+                        return item;
+                    }
+                    return null;
+                }).filter(Boolean);
+            }
+            if (typeof nodo === 'object') {
+                return Object.keys(nodo).map(function(key) {
+                    let item = nodo[key]; 
+                    if (item && typeof item === 'object') { item.id = item.id || key; } 
+                    return item;
+                }).filter(function(item) { return item !== null && typeof item === 'object'; });
+            }
+            return [];
+        }
+
+        function popolaSelectLoginVolontari() {
+            const select = document.getElementById('select-login-volontario');
+            if(!select) return;
+            const tempVal = select.value;
+            let opts = '<option value="">-- Seleziona il tuo nome --</option>';
+            volontari.forEach(function(v) {
+                opts += '<option value="' + v.nome + '">' + v.nome + ' (' + (v.ruolo || v.qualifica || 'Volontario') + ')</option>';
+            });
+            select.innerHTML = opts;
+            if (tempVal) select.value = tempVal;
+        }
+
+        function aggiornaListaPazientiDatalist() {
+            const dl = document.getElementById('lista-pazienti');
+            if (!dl) return;
+            const nomi = Array.from(new Set(tuttiTrasporti.map(function(t) { return t.paziente; }).filter(Boolean))).sort();
+            dl.innerHTML = '';
+            nomi.forEach(function(n) { dl.innerHTML += '<option value="' + n + '">'; });
+        }
+
+        function aggiornaVisualizzazionePin() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (i < pinInserito.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            }
+        }
+
+        window.aggiungiDigit = function(num) {
+            const selectVol = document.getElementById('select-login-volontario').value;
+            if(!selectVol) { alert("Seleziona prima il tuo nome dalla lista!"); return; }
+            if (pinInserito.length < 4) {
+                pinInserito += num;
+                aggiornaVisualizzazionePin();
+                if (pinInserito.length === 4) { verificaPin(); }
+            }
+        };
+
+        window.cancellaDigit = function() {
+            if (pinInserito.length > 0) {
+                pinInserito = pinInserito.slice(0, -1);
+                aggiornaVisualizzazionePin();
+                document.getElementById('login-error').style.display = 'none';
+            }
+        };
+
+        window.resetPin = function() {
+            pinInserito = "";
+            aggiornaVisualizzazionePin();
+            document.getElementById('login-error').style.display = 'none';
+        };
+
+        function controllaScadenzeVolontario(volObj) {
+            volontarioBloccato = false;
+            let messaggi = [];
+            const campiDaControllare = [
+                { id: 'blsd', nome: 'BLSD' },
+                { id: 'patente', nome: 'Patente' },
+                { id: 'sicurezza', nome: 'Sicurezza L.81' },
+                { id: 'medico', nome: 'Cert. Medico' },
+                { id: 'quota', nome: 'Quota Associativa' }
+            ];
+
+            campiDaControllare.forEach(function(campo) {
+                if (volObj[campo.id]) {
+                    const diff = Math.ceil((new Date(volObj[campo.id]) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diff < 0) {
+                        volontarioBloccato = true;
+                        messaggi.push(campo.nome + ' SCADUTO');
+                    } else if (diff <= 30) {
+                        messaggi.push(campo.nome + ' in scadenza (' + diff + 'gg)');
+                    }
+                }
+            });
+
+            const banner = document.getElementById('accreditamento-banner');
+            const bannerText = document.getElementById('accreditamento-text');
+            
+            if (messaggi.length > 0) {
+                banner.style.display = 'block';
+                bannerText.innerHTML = messaggi.join(' &bull; ');
+                if (volontarioBloccato) {
+                    banner.style.background = 'var(--danger)';
+                    banner.style.color = 'white';
+                } else {
+                    banner.style.background = 'var(--warning)';
+                    banner.style.color = 'var(--text-main)';
+                }
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        function verificaPin() {
+            volontarioCorrente = document.getElementById('select-login-volontario').value;
+            let volObj = volontari.find(function(v) { return v.nome === volontarioCorrente; });
+            
+            let pinValido = PIN_CORRETTO;
+            if(volObj) {
+                if (volObj.pin && String(volObj.pin).trim() !== "") {
+                    pinValido = String(volObj.pin);
+                } else if(volObj.tel && volObj.tel.length >= 4) {
+                    pinValido = volObj.tel.slice(-4);
+                }
+            }
+
+            if (pinInserito === pinValido || pinInserito === PIN_CORRETTO) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                document.getElementById('fab-container').style.display = 'flex';
+                
+                document.getElementById('tessera-nome').innerText = volontarioCorrente;
+                document.getElementById('presenze-vol-nome').innerText = volontarioCorrente;
+                
+                if(volObj) {
+                    document.getElementById('tessera-ruolo').innerText = volObj.ruolo || volObj.qualifica || 'Volontario';
+                    document.getElementById('tessera-id').innerText = volObj.id || 'N/D';
+                    
+                    const imgEl = document.getElementById('tessera-foto');
+                    if (volObj.foto) { imgEl.src = volObj.foto; } else { imgEl.src = 'https://via.placeholder.com/150'; }
+                    
+                    let statoQuotaTesto = "IN REGOLA";
+                    let coloreQuota = "var(--success)";
+                    if (volObj.quota) {
+                        const diff = Math.ceil((new Date(volObj.quota) - new Date()) / (1000 * 60 * 60 * 24));
+                        if (diff < 0) { statoQuotaTesto = "SCADUTA"; coloreQuota = "var(--danger)"; }
+                    }
+                    const quotaEl = document.getElementById('tessera-stato-quota');
+                    quotaEl.innerText = statoQuotaTesto;
+                    quotaEl.style.color = coloreQuota;
+                    
+                    const qrContainer = document.getElementById('qrcode-container-mobile');
+                    if (qrContainer) {
+                        qrContainer.innerHTML = "";
+                        let urlVerifica = "https://tuo-dominio.netlify.app/?verify=" + volObj.id; 
+                        setTimeout(function() {
+                            try { new QRCode(qrContainer, { text: urlVerifica, width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L }); } catch(e) {}
+                        }, 100);
+                    }
+
+                    controllaScadenzeVolontario(volObj);
+                }
+
+                showToast('Benvenuto, ' + volontarioCorrente);
+                inizializzaAppDati();
+                aggiornaStatoPresenzaUI();
+                aggiornaWidgetTurnoOggi();
+                renderRegistroPresenze();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+                setTimeout(resetPin, 800);
+            }
+        }
+
+        window.eseguiLogout = function() {
+            pinInserito = "";
+            volontarioCorrente = "";
+            volontarioBloccato = false;
+            aggiornaVisualizzazionePin();
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('fab-container').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('accreditamento-banner').style.display = 'none';
+            showToast("App bloccata in sicurezza");
+        };
+
+        window.apriTesseraVolontario = function() { document.getElementById('modal-tessera').classList.add('active'); };
+        window.chiudiTesseraVolontario = function() { document.getElementById('modal-tessera').classList.remove('active'); };
+
+        // --- SISTEMA CONTROLLO INGRESSI / USCITE: TIMBRATURA STRAORDINARIA ---
+        function getStatoPresenzaCorrente() {
+            if (!volontarioCorrente) return false;
+            const oggi = getDataStr(0);
+            const mieTimbrature = presenze.filter(function(p) { return p.volontario === volontarioCorrente && p.data === oggi; }).sort(function(a,b) { return a.timestamp - b.timestamp; });
+            if (mieTimbrature.length === 0) return false;
+            const ultima = mieTimbrature[mieTimbrature.length - 1];
+            return ultima.tipo === 'ENTRATA';
+        }
+
+        function aggiornaStatoPresenzaUI() {
+            const inServizio = getStatoPresenzaCorrente();
+            const dot = document.getElementById('dot-presenza');
+            const valStato = document.getElementById('val-stato-presenza');
+            const btn = document.getElementById('btn-toggle-presenza');
+            const presBox = document.getElementById('presenze-status-box');
+
+            if (inServizio) {
+                const oggi = getDataStr(0);
+                const mieTimbrature = presenze.filter(function(p) { return p.volontario === volontarioCorrente && p.data === oggi; }).sort(function(a,b) { return a.timestamp - b.timestamp; });
+                const ultima = mieTimbrature[mieTimbrature.length - 1];
+                const isStraordinario = ultima && ultima.straordinario;
+                const nonConfermato = ultima && ultima.confermato === false;
+
+                dot.classList.add('attivo');
+                if (isStraordinario) {
+                    dot.style.background = nonConfermato ? "var(--warning)" : "var(--info)";
+                    dot.style.boxShadow = nonConfermato ? "0 0 0 3px rgba(245, 158, 11, 0.2)" : "0 0 0 3px rgba(59, 130, 246, 0.2)";
+                    valStato.innerText = nonConfermato ? "In Servizio (Da Convalidare)" : "In Servizio (Straordinario)";
+                    valStato.style.color = nonConfermato ? "var(--warning)" : "var(--info)";
+                } else {
+                    dot.style.background = "var(--success)";
+                    dot.style.boxShadow = "0 0 0 3px rgba(16, 185, 129, 0.2)";
+                    valStato.innerText = "In Servizio (Attivo)";
+                    valStato.style.color = "var(--success)";
+                }
+                
+                btn.className = "btn-timbro esci";
+                btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Termina Turno';
+                
+                if(presBox) {
+                    presBox.innerText = isStraordinario ? (nonConfermato ? "Turno Straordinario - Da Convalidare" : "Turno Straordinario Convalidato") : "Attualmente in Servizio";
+                    presBox.style.color = isStraordinario ? (nonConfermato ? "var(--warning)" : "var(--info)") : "var(--success)";
+                }
+            } else {
+                dot.classList.remove('attivo');
+                dot.style.background = "var(--danger)";
+                dot.style.boxShadow = "none";
+                valStato.innerText = "Fuori Servizio";
+                valStato.style.color = "var(--danger)";
+                btn.className = "btn-timbro entra";
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Inizia Turno';
+                
+                if(presBox) {
+                    presBox.innerText = "Fuori Servizio";
+                    presBox.style.color = "var(--danger)";
+                }
+            }
+        }
+
+        window.toggleTimbraturaPresenza = function() {
+            if (!volontarioCorrente) return;
+            const inServizio = getStatoPresenzaCorrente();
+            const tipoTimbratura = inServizio ? 'USCITA' : 'ENTRATA';
+            
+            const oggi = getDataStr(0);
+            const tOggi = turni.find(function(t) { return t.data === oggi && (t.autista === volontarioCorrente || t.soccorritore === volontarioCorrente); });
+            const isStraordinario = !tOggi;
+
+            if (tipoTimbratura === 'ENTRATA' && isStraordinario) {
+                if(!confirm("Non risulti a tabellone per la data odierna. Confermi l'ingresso per un turno di emergenza/straordinario? (Sarà richiesta conferma dalla Centrale)")) {
+                    return;
+                }
+            }
+
+            const id = Date.now().toString();
+            const now = new Date();
+
+            const objPresenza = {
+                id: id,
+                volontario: volontarioCorrente,
+                tipo: tipoTimbratura,
+                data: getDataStr(0),
+                ora: now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                timestamp: now.getTime(),
+                straordinario: isStraordinario,
+                confermato: isStraordinario ? false : true 
+            };
+
+            getDbRef('presenze/' + id).set(objPresenza)
+                .then(function() {
+                    if (tipoTimbratura === 'ENTRATA') {
+                        showToast(isStraordinario ? 'Ingresso straordinario registrato! In attesa di convalida.' : 'Inizio turno registrato! Buon servizio.');
+                    } else {
+                        showToast('Fine turno registrata. Arrivederci!');
+                    }
+                    aggiornaStatoPresenzaUI();
+                    renderRegistroPresenze();
+                })
+                .catch(function(err) { alert("Errore timbratura: " + err.message); });
+        };
+
+        function renderRegistroPresenze() {
+            const wrap = document.getElementById('lista-presenze-oggi');
+            if (!wrap) return;
+            const oggi = getDataStr(0);
+            const mie = presenze.filter(function(p) { return p.volontario === volontarioCorrente && p.data === oggi; }).sort(function(a,b) { return b.timestamp - a.timestamp; });
+
+            if (mie.length === 0) {
+                wrap.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:20px;">Nessuna timbratura registrata oggi.</p>';
+                return;
+            }
+
+            wrap.innerHTML = '';
+            mie.forEach(function(p) {
+                let isEntrata = p.tipo === 'ENTRATA';
+                let tagStr = '';
+                if (p.straordinario) {
+                    if (p.confermato === false) {
+                        tagStr = '<span class="badge" style="background:var(--warning); color:white; font-size:0.6rem; margin-top:4px;">Da Confermare</span>';
+                    } else {
+                        tagStr = '<span class="badge" style="background:var(--info); color:white; font-size:0.6rem; margin-top:4px;">Straordinario OK</span>';
+                    }
+                }
+                
+                wrap.innerHTML += '<div style="background:white; border:1px solid var(--border); border-left:4px solid ' + (isEntrata ? 'var(--success)' : 'var(--danger)') + '; border-radius:10px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;"><div><strong style="color:' + (isEntrata ? 'var(--success)' : 'var(--danger)') + '; font-size:0.85rem;">' + p.tipo + '</strong><span style="font-size:0.75rem; color:var(--text-muted); display:block;">Ore ' + p.ora + '</span>' + tagStr + '</div><i class="fa-solid ' + (isEntrata ? 'fa-arrow-right-to-bracket' : 'fa-arrow-right-from-bracket') + '" style="color:' + (isEntrata ? 'var(--success)' : 'var(--danger)') + '; font-size:1.1rem;"></i></div>';
+            });
+        }
+
+        function aggiornaWidgetTurnoOggi() {
+            const oggi = getDataStr(0);
+            const tOggi = turni.find(function(t) { return t.data === oggi && (t.autista === volontarioCorrente || t.soccorritore === volontarioCorrente); });
+
+            const titEl = document.getElementById('turno-oggi-titolo');
+            const dettEl = document.getElementById('turno-oggi-dettaglio');
+            const siglaEl = document.getElementById('turno-sigla-val');
+
+            if (tOggi) {
+                let ruolo = tOggi.autista === volontarioCorrente ? "Autista" : "Soccorritore";
+                let compagno = tOggi.autista === volontarioCorrente ? (tOggi.soccorritore || "Da Assegnare") : (tOggi.autista || "Da Assegnare");
+                let siglaMatch = (tOggi.fascia || '').match(/\[(.*?)\]/);
+                let sigla = siglaMatch ? siglaMatch[1] : 'OK';
+
+                titEl.innerText = tOggi.fascia || 'Turno Programmato';
+                dettEl.innerText = 'Ruolo: ' + ruolo + ' • Mezzo: ' + (tOggi.mezzo || 'N/D') + ' • Compagno: ' + compagno;
+                siglaEl.innerText = '[' + sigla + ']';
+            } else {
+                titEl.innerText = "Nessun turno assegnato oggi";
+                dettEl.innerText = "Non risulti a tabellone per la data odierna";
+                siglaEl.innerText = "LIBERO";
+            }
+        }
+
+        function toggleRitornoCampi(prefix) {
+            const selectTipo = document.getElementById(prefix + '-tipo-corsa');
+            const wrap = document.getElementById(prefix + '-ritorno-wrap');
+            if (selectTipo && wrap) {
+                wrap.style.display = selectTipo.value === 'Andata e Ritorno' ? 'block' : 'none';
+            }
+        }
+
+        window.apriPercorsoMapsRapido = function(idPart, idDest, idSoste) {
+            const p = (document.getElementById(idPart) ? document.getElementById(idPart).value : '').trim();
+            const d = (document.getElementById(idDest) ? document.getElementById(idDest).value : '').trim();
+            const s = idSoste && document.getElementById(idSoste) ? document.getElementById(idSoste).value.trim() : '';
+            if (!p || !d) { alert("Compila sia la partenza che la destinazione per calcolare il percorso."); return; }
+            let url = 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(p) + '&destination=' + encodeURIComponent(d);
+            if (s) { url += '&waypoints=' + encodeURIComponent(s); }
+            window.open(url, '_blank');
+        };
+
+        function inizializzaAppDati() {
+            const opzioniData = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('data-header').innerText = new Date().toLocaleDateString('it-IT', opzioniData);
+            
+            const oggiIso = getDataStr(0);
+            document.getElementById('san-data').value = oggiIso;
+            document.getElementById('svz-data').value = oggiIso;
+            document.getElementById('dia-inizio').value = oggiIso;
+            document.getElementById('nc-data').value = oggiIso;
+            document.getElementById('cont-data').value = oggiIso;
+            
+            let now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('chk-data').value = now.toISOString().slice(0,16);
+
+            inizializzaCalendario();
+            renderServizi();
+            initGooglePlacesAutocomplete();
+        }
+
+        function initGooglePlacesAutocomplete() {
+            if (typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+            const inputs = document.querySelectorAll('.google-autocomplete');
+            inputs.forEach(function(input) {
+                if (input.dataset.autocompleteInitialized) return;
+                input.addEventListener('input', function(e) { if (e.target.value.includes('!')) { e.target.value = e.target.value.replace(/!/g, ''); } });
+                const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "it" }, fields: ["formatted_address", "name"] });
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    let val = place.formatted_address || place.name || '';
+                    input.value = val.replace(/!/g, '');
+                });
+                input.dataset.autocompleteInitialized = "true";
+            });
+        }
+
+        function inizializzaCalendario() {
+            const tabsContainer = document.getElementById('day-tabs-container');
+            tabsContainer.innerHTML = '';
+            dateSettimana = [];
+            for (let i = 0; i < 7; i++) {
+                let dIso = getDataStr(i);
+                dateSettimana.push(dIso);
+                let d = new Date(dIso);
+                let nomeGiorno = i === 0 ? "Oggi" : (i === 1 ? "Domani" : d.toLocaleDateString('it-IT', { weekday: 'short' }).replace('.', ''));
+                nomeGiorno = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1);
+                let etichetta = nomeGiorno + ' ' + d.getDate() + ' ' + d.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '');
+                tabsContainer.innerHTML += '<div class="toggle-btn ' + (i === 0 ? 'active' : '') + '" id="tab-' + i + '" onclick="cambiaGiorno(' + i + ')">' + etichetta + '</div>';
+            }
+        }
+
+        window.cambiaGiorno = function(indice) {
+            offsetGiorno = indice;
+            document.querySelectorAll('.toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.getElementById('tab-' + indice).classList.add('active');
+            renderServizi();
+        };
+
+        function getDataStr(aggiungiGiorni) {
+            if(aggiungiGiorni === undefined) aggiungiGiorni = 0;
+            let d = new Date(); d.setDate(d.getDate() + aggiungiGiorni);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0];
+        }
+
+        function aggiornaDropdownListe() {
+            let optMezzi = '<option value="">-- Seleziona --</option>';
+            mezzi.forEach(function(m) { optMezzi += '<option value="' + m.nome + ' (' + m.targa + ')">' + m.nome + ' - ' + m.targa + '</option>'; });
+            document.querySelectorAll('.select-mezzi').forEach(function(el) { el.innerHTML = optMezzi; });
+
+            let optVol = '<option value="">-- Seleziona --</option>';
+            volontari.forEach(function(v) { optVol += '<option value="' + v.nome + '">' + v.nome + ' (' + (v.ruolo || '') + ')</option>'; });
+            document.querySelectorAll('.select-volontari').forEach(function(el) { el.innerHTML = optVol; });
+            
+            if(volontarioCorrente) {
+                const svzAut = document.getElementById('svz-autistaSelezionato');
+                if(svzAut && !svzAut.value) svzAut.value = volontarioCorrente;
+                const sanOp = document.getElementById('san-operatore');
+                if(sanOp && !sanOp.value) sanOp.value = volontarioCorrente;
+                const chkAut = document.getElementById('chk-autista');
+                if(chkAut && !chkAut.value) chkAut.value = volontarioCorrente;
+            }
+        }
+
+        function generaLinkGoogleMaps(partenza, soste, destinazione) {
+            let baseUrl = "https://www.google.com/maps/dir/?api=1";
+            let p = encodeURIComponent(partenza || "");
+            let d = encodeURIComponent(destinazione || "");
+            let url = baseUrl + '&origin=' + p + '&destination=' + d;
+            let s = soste || "";
+            if (s && s.trim() !== "") {
+                url += '&waypoints=' + encodeURIComponent(s.trim());
+            }
+            return url;
+        }
+
+        function generaLinkGoogleCalendarWeb(t) {
+            try {
+                let startIso = (t.data || '').replace(/-/g, '') + 'T' + (t.ora || '08:00').replace(':', '') + '00';
+                let startD = new Date(t.data + 'T' + (t.ora || '08:00') + ':00');
+                startD.setHours(startD.getHours() + 2);
+                let pad = function(n) { return (n < 10 ? '0' : '') + n; };
+                let endIso = startD.getFullYear() + pad(startD.getMonth() + 1) + pad(startD.getDate()) + 'T' + pad(startD.getHours()) + pad(startD.getMinutes()) + '00';
+
+                let title = encodeURIComponent('Servizio CdA: ' + (t.paziente || '') + ' ' + (t.sedia && t.sedia !== 'No' ? '[' + t.sedia + ']' : ''));
+                
+                let details = 'Regime: ' + (t.regime || 'Privato') + '\n' +
+                              (t.telefono ? 'Telefono: ' + t.telefono + '\n' : '') +
+                              (t.nre ? 'NRE: ' + t.nre + '\n' : '') +
+                              (t.cf ? 'CF: ' + t.cf + '\n' : '') +
+                              (t.deambulante ? 'Deambulante: ' + t.deambulante + '\n' : '') +
+                              (t.sedia ? 'Sedia: ' + t.sedia + '\n' : '') +
+                              'Partenza: ' + t.partenza + '\n' +
+                              (t.soste || t.sosta ? 'Sosta: ' + (t.soste || t.sosta) + '\n' : '') +
+                              'Destinazione: ' + t.destinazione + '\n' +
+                              'Mezzo: ' + (t.mezzoSelezionato || t.mezzo || 'Da definire') + '\n' +
+                              'Equipaggio: Aut. ' + (t.autistaSelezionato || t.autista || '-') + ' / Socc. ' + (t.soccorritoreSelezionato || t.soccorritore || '-') + '\n' +
+                              (t.note || t.speseNota ? '\nNOTE/SPESE:\n' + (t.note || t.speseNota) : '');
+
+                let detailsEnc = encodeURIComponent(details);
+                let locEnc = encodeURIComponent(t.partenza || '');
+
+                return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + title + '&dates=' + startIso + '/' + endIso + '&details=' + detailsEnc + '&location=' + locEnc;
+            } catch (err) {
+                return '#';
+            }
+        }
+
+        window.calcolaKmPercorsi = function() {
+            const start = parseFloat(document.getElementById('km-partenza-input').value) || 0;
+            const end = parseFloat(document.getElementById('km-arrivo-input').value) || 0;
+            const badge = document.getElementById('km-totali-badge');
+            if (end >= start && end > 0) {
+                badge.innerText = 'Distanza Percorsa: ' + (end - start).toFixed(1) + ' km';
+                badge.style.color = '#0369a1';
+            } else if (end > 0 && end < start) {
+                badge.innerText = 'Attenzione: KM rientro inferiori alla partenza!';
+                badge.style.color = 'var(--danger)';
+            } else {
+                badge.innerText = 'Distanza Percorsa: 0 km';
+                badge.style.color = '#0369a1';
+            }
+        };
+
+        function renderServizi() {
+            const container = document.getElementById('lista-servizi');
+            if(!container) return;
+            container.innerHTML = '';
+            const dataFiltro = dateSettimana[offsetGiorno], dataOggi = dateSettimana[0];
+            let serviziGiorno = tuttiTrasporti.filter(function(t) { return t.data === dataFiltro; }).sort(function(a, b) { return (a.ora > b.ora) ? 1 : -1; });
+
+            if (serviziGiorno.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-mug-hot"></i><h3>Nessun Servizio</h3><p>Non ci sono viaggi programmati per questa data.</p></div>'; return;
+            }
+
+            serviziGiorno.forEach(function(t) {
+                let chiuso = (t.stato === 'Completato' || t.stato === 'Da Rendicontare' || t.statoServizio === 'Completato' || t.statoServizio === 'Da Rendicontare');
+                
+                let htmlPulsante = chiuso ? '<div class="status-done"><i class="fa-solid fa-check-double"></i> Concluso ' + (t.oraChiusura ? 'alle '+t.oraChiusura : '') + ' (' + ((parseFloat(t.kmArrivo)||0) - (parseFloat(t.kmPartenza)||0)).toFixed(0) + ' km)</div>' :
+                                  (dataFiltro === dataOggi ? '<button class="btn-action" onclick="apriPannelloChiusura(\'' + t.id + '\')"><i class="fa-solid fa-flag-checkered"></i> Chiudi</button>' :
+                                  '<div class="status-locked"><i class="fa-solid fa-lock"></i> Chiudibile il ' + new Date(dataFiltro).toLocaleDateString('it-IT') + '</div>');
+
+                let ic = t.regime && t.regime.toLowerCase().includes('asl') ? 'fa-file-medical' : 'fa-hand-holding-dollar';
+                
+                let gCalUrl = generaLinkGoogleCalendarWeb(t);
+                let btnGoogleCalendar = '<a href="' + gCalUrl + '" target="_blank" rel="noopener noreferrer" style="background:#ea4335; color:white; border:none; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:700; box-shadow: 0 4px 10px rgba(234,67,53,0.3); text-decoration:none; margin-top:6px; width:100%; display:flex; align-items:center; justify-content:center; gap:5px;" title="Aggiungi a Google Calendar"><i class="fa-brands fa-google"></i> Cal</a>';
+
+                let sostaVal = t.soste || t.sosta || '';
+                let mapsUrl = generaLinkGoogleMaps(t.partenza, sostaVal, t.destinazione);
+
+                let btnCall = '';
+                if (t.telefono && t.telefono.trim() !== '') {
+                    btnCall = '<a href="tel:' + t.telefono.replace(/\s+/g, '') + '" class="btn-call" title="Chiama Paziente/Reparto"><i class="fa-solid fa-phone"></i></a>';
+                }
+
+                let sediaTxt = t.sedia && t.sedia !== 'No' ? t.sedia : (t.presidio || '');
+                let badgePresidio = sediaTxt ? '<span class="badge-pill badge-presidio"><i class="fa-solid fa-wheelchair"></i> ' + sediaTxt + '</span>' : '';
+                let badgeNre = t.nre ? '<span class="badge-pill badge-nre">NRE: ' + t.nre + '</span>' : '';
+                let badgeRitorno = t.trattaRitorno ? '<span class="badge-pill badge-ar"><i class="fa-solid fa-arrows-rotate"></i> Ritorno</span>' : '';
+
+                let sostaHtml = '';
+                if (sostaVal && sostaVal.trim() !== '') {
+                    sostaHtml = '<div class="route-point"><div class="icon-col"><i class="fa-solid fa-circle-pause" style="color:var(--warning)"></i><div class="line"></div></div><div class="text-col"><span>Sosta Intermedia</span><strong>' + sostaVal + '</strong></div></div>';
+                }
+
+                let noteContent = t.note || t.speseNota || '';
+                let noteHtml = '';
+                if (noteContent && noteContent.trim() !== '') {
+                    noteHtml = '<div class="card-notes"><i class="fa-solid fa-note-sticky"></i><div><strong>Note/Spese:</strong> ' + noteContent.replace(/\n/g, '<br>') + '</div></div>';
+                }
+
+                container.innerHTML += '<div class="card ' + (chiuso ? 'chiuso' : '') + '"><div class="card-top"><div style="display:flex; flex-direction:column; align-items:center; min-width: 60px;"><div class="time-badge">' + t.ora + '</div>' + (!chiuso ? btnGoogleCalendar : '') + '</div><div style="flex:1; padding-left:12px;"><div class="regime-label"><i class="fa-solid ' + ic + '"></i> ' + (t.regime || 'Privato') + '</div><div class="patient-name">' + t.paziente + '</div><div class="medical-badges">' + badgeRitorno + badgePresidio + badgeNre + '</div></div></div><div class="divider"></div><div class="route"><div class="route-point"><div class="icon-col"><i class="fa-regular fa-circle-dot" style="color:var(--info)"></i><div class="line"></div></div><div class="text-col"><span>Partenza</span><strong>' + t.partenza + '</strong></div></div>' + sostaHtml + '<div class="route-point"><div class="icon-col"><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i></div><div class="text-col"><span>Destinazione</span><strong>' + t.destinazione + '</strong></div></div></div>' + noteHtml + '<div class="crew-info"><div><i class="fa-solid fa-truck-medical"></i> ' + (t.mezzoSelezionato || t.mezzo || 'N/D') + '</div><div><i class="fa-solid fa-users"></i> ' + (t.autistaSelezionato || t.autista || '-') + ' &bull; ' + (t.soccorritoreSelezionato || t.soccorritore || '-') + '</div></div><div class="card-actions-row">' + btnCall + '<a href="' + mapsUrl + '" target="_blank" rel="noopener noreferrer" class="btn-maps" title="Apri percorso in Google Maps"><i class="fa-solid fa-map-location-dot"></i> Maps</a>' + htmlPulsante + '</div></div>';
+            });
+        }
+
+        // --- FIRMA DIGITALE E SCONTRINO ---
+        let signatureCtx, signatureCanvas, isDrawing = false, hasDrawn = false;
+        let lastPos = null;
+
+        function initFirma() {
+            signatureCanvas = document.getElementById('signature-pad');
+            signatureCtx = signatureCanvas.getContext('2d', { willReadFrequently: true });
+            
+            const rect = signatureCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            signatureCanvas.width = rect.width * dpr;
+            signatureCanvas.height = rect.height * dpr;
+            signatureCtx.scale(dpr, dpr);
+            
+            signatureCanvas.style.width = rect.width + 'px';
+            signatureCanvas.style.height = rect.height + 'px';
+
+            signatureCtx.lineWidth = 3; 
+            signatureCtx.lineCap = 'round'; 
+            signatureCtx.lineJoin = 'round'; 
+            signatureCtx.strokeStyle = '#1e293b';
+
+            const getPos = function(e) {
+                const rect = signatureCanvas.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            };
+
+            const start = function(e) { 
+                e.preventDefault(); 
+                isDrawing = true; 
+                lastPos = getPos(e); 
+                signatureCtx.beginPath(); 
+                signatureCtx.moveTo(lastPos.x, lastPos.y); 
+            };
+
+            const draw = function(e) { 
+                e.preventDefault(); 
+                if(!isDrawing || !lastPos) return; 
+                const pos = getPos(e); 
+                const midPoint = { x: lastPos.x + (pos.x - lastPos.x) / 2, y: lastPos.y + (pos.y - lastPos.y) / 2 };
+                signatureCtx.quadraticCurveTo(lastPos.x, lastPos.y, midPoint.x, midPoint.y);
+                signatureCtx.stroke();
+                lastPos = pos;
+                hasDrawn = true;
+            };
+
+            const stop = function(e) { e.preventDefault(); isDrawing = false; lastPos = null; };
+
+            signatureCanvas.addEventListener('pointerdown', start, {passive: false});
+            signatureCanvas.addEventListener('pointermove', draw, {passive: false});
+            signatureCanvas.addEventListener('pointerup', stop);
+            signatureCanvas.addEventListener('pointerout', stop);
+            signatureCanvas.addEventListener('pointercancel', stop);
+        }
+
+        window.pulisciFirma = function() { 
+            if(signatureCtx && signatureCanvas) {
+                signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height); 
+                hasDrawn = false;
+            }
+        };
+
+        const fileUploader = document.getElementById('foto-upload');
+        if(fileUploader) {
+            fileUploader.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if(!file) return;
+                const btnLabel = document.getElementById('lbl-foto');
+                btnLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Elaborazione...';
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        fotoScontrinoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                        
+                        btnLabel.innerHTML = '<i class="fa-solid fa-check"></i> Scontrino Caricato';
+                        btnLabel.classList.add('loaded');
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.apriPannelloChiusura = function(id) {
+            if (!getStatoPresenzaCorrente()) {
+                showToast("ACCESSO NEGATO: Timbra l'Inizio Turno per chiudere un servizio.", true);
+                return;
+            }
+            const t = tuttiTrasporti.find(function(x) { return String(x.id) === String(id); });
+            if (!t) return;
+            idServizioAttivo = id;
+            document.getElementById('sheet-patient-name').innerText = t.paziente + '\nDa: ' + t.partenza;
+            
+            let kmP = parseFloat(t.kmPartenza) || 0;
+            let kmA = parseFloat(t.kmArrivo) || (kmP > 0 ? kmP + 10 : 0);
+            
+            document.getElementById('km-partenza-input').value = kmP > 0 ? kmP : '';
+            document.getElementById('km-arrivo-input').value = kmA > 0 ? kmA : '';
+            calcolaKmPercorsi();
+            
+            fotoScontrinoBase64 = null;
+            document.getElementById('lbl-foto').innerHTML = '<i class="fa-solid fa-camera"></i> Allega Scontrino / Ricevuta';
+            document.getElementById('lbl-foto').classList.remove('loaded');
+            document.getElementById('chk-gdpr-firma').checked = true;
+            
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('bottomSheet').classList.add('active');
+            setTimeout(function() { initFirma(); }, 400);
+        };
+
+        window.chiudiModaleBottomSheet = function() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('bottomSheet').classList.remove('active');
+            idServizioAttivo = null;
+        };
+
+        window.confermaChiusura = function() {
+            if (!idServizioAttivo) return;
+            const kmStart = parseFloat(document.getElementById('km-partenza-input').value) || 0;
+            const kmEnd = parseFloat(document.getElementById('km-arrivo-input').value) || 0;
+            
+            if (kmEnd <= 0) { alert("Inserisci i chilometri di rientro missione."); return; }
+            if (kmEnd < kmStart) { alert("I KM di rientro non possono essere inferiori a quelli di partenza!"); return; }
+            if (!document.getElementById('chk-gdpr-firma').checked) { alert("È obbligatorio confermare la presa visione informativa / consenso."); return; }
+
+            const t = tuttiTrasporti.find(function(x) { return String(x.id) === String(idServizioAttivo); });
+            const updates = {
+                kmPartenza: kmStart,
+                kmArrivo: kmEnd,
+                oraChiusura: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                operatoreChiusura: volontarioCorrente,
+                statoServizio: (t.regime && t.regime.toLowerCase().includes('asl')) ? "Da Rendicontare" : "Completato",
+                stato: (t.regime && t.regime.toLowerCase().includes('asl')) ? "Da Rendicontare" : "Completato"
+            };
+
+            if(fotoScontrinoBase64) updates.fotoScontrino = fotoScontrinoBase64;
+            if(signatureCanvas && hasDrawn) { updates.firma = signatureCanvas.toDataURL('image/png'); }
+
+            chiudiModaleBottomSheet();
+
+            getDbRef('trasporti/' + idServizioAttivo).update(updates)
+                .then(function() {
+                    showToast('Servizio chiuso e archiviato con successo!');
+                    setTimeout(function() {
+                        document.getElementById('modal-cs-qr').classList.add('active');
+                        if(!qrCSGenerato) {
+                            const qrContainer = document.getElementById('qr-cs-container');
+                            qrContainer.innerHTML = '';
+                            new QRCode(qrContainer, { text: URL_QUESTIONARIO_CS, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.L });
+                            qrCSGenerato = true;
+                        }
+                    }, 400);
+                })
+                .catch(function(err) {
+                    console.error("Errore salvataggio chiusura:", err);
+                    showToast("Errore di rete: salvataggio fallito", true);
+                });
+        };
+
+        window.chiudiModalCS = function() {
+            document.getElementById('modal-cs-qr').classList.remove('active');
+        };
+
+        window.toggleFab = function() { document.getElementById('fab-container').classList.toggle('active'); document.getElementById('fab-overlay').classList.toggle('active'); };
+        
+        window.apriPagina = function(pageId) { 
+            if (volontarioBloccato && ['page-checklist', 'page-servizio', 'page-dialisi'].includes(pageId)) {
+                toggleFab();
+                showToast("ACCESSO BLOCCATO: Documenti scaduti. Contatta la Direzione.", true);
+                return;
+            }
+            if (!getStatoPresenzaCorrente() && ['page-checklist', 'page-servizio', 'page-dialisi', 'page-sanificazione'].includes(pageId)) {
+                toggleFab();
+                showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per operare.", true);
+                return;
+            }
+            toggleFab(); 
+            document.getElementById(pageId).classList.add('active'); 
+            setTimeout(initGooglePlacesAutocomplete, 300); 
+        };
+        
+        window.chiudiPagina = function(pageId) { document.getElementById(pageId).classList.remove('active'); };
+
+        window.salvaContinuitaMobile = function(e) {
+            e.preventDefault();
+            const id = Date.now().toString();
+            const obj = {
+                id: id,
+                data: document.getElementById('cont-data').value,
+                evento: document.getElementById('cont-evento').value,
+                coinvolto: document.getElementById('cont-coinvolto').value,
+                azione: document.getElementById('cont-azione').value,
+                esito: document.getElementById('cont-esito').value,
+                note: document.getElementById('cont-note').value,
+                segnalante: volontarioCorrente 
+            };
+            getDbRef('continuitaServizio/' + id).set(obj).then(function() {
+                chiudiPagina('page-continuita');
+                document.getElementById('form-continuita').reset();
+                showToast('Emergenza segnalata. Centrale avvisata!');
+            });
+        };
+
+        window.salvaChecklistMobile = function(e) {
+            e.preventDefault();
+            const id = Date.now().toString();
+            const obj = { 
+                id: id, 
+                data: document.getElementById('chk-data').value, 
+                mezzo: document.getElementById('chk-mezzo').value, 
+                autista: document.getElementById('chk-autista').value, 
+                km: document.getElementById('chk-km').value, 
+                carburante: document.getElementById('chk-carburante').value,
+                sirene: document.getElementById('chk-sirene').value,
+                barella: document.getElementById('chk-barella').value,
+                zaino: document.getElementById('chk-zaino').value,
+                dae: document.getElementById('chk-dae').value,
+                o2: document.getElementById('chk-o2').value,
+                note: document.getElementById('chk-note').value
+            };
+            getDbRef('checklists/' + id).set(obj).then(function() { 
+                chiudiPagina('page-checklist'); 
+                document.getElementById('form-checklist').reset(); 
+                showToast('Checklist salvata (Sync ISO)!'); 
+            });
+        };
+
+        window.salvaSanificazioneMobile = function(e) {
+            e.preventDefault();
+            const id = Date.now().toString();
+            const obj = { 
+                id: id, 
+                data: document.getElementById('san-data').value, 
+                mezzo: document.getElementById('san-mezzo').value, 
+                operatore: document.getElementById('san-operatore').value, 
+                tipo: document.getElementById('san-tipo').value, 
+                pmc: document.getElementById('san-pmc').value,
+                note: document.getElementById('san-note').value
+            };
+            getDbRef('sanificazioni/' + id).set(obj).then(function() { 
+                chiudiPagina('page-sanificazione'); 
+                document.getElementById('form-sanificazione').reset(); 
+                showToast('Sanificazione con PMC registrata!'); 
+            });
+        };
+
+        window.salvaServizioMobile = function(e) {
+            e.preventDefault();
+            const regime = document.getElementById('svz-regime').value;
+            const paziente = document.getElementById('svz-paziente').value;
+            const cf = document.getElementById('svz-cf').value.toUpperCase();
+            const nre = document.getElementById('svz-nre').value;
+            const dataS = document.getElementById('svz-data').value;
+            const oraS = document.getElementById('svz-ora').value;
+            const telefono = document.getElementById('svz-telefono').value;
+            const partenza = document.getElementById('svz-partenza').value;
+            const soste = document.getElementById('svz-soste').value;
+            const destinazione = document.getElementById('svz-destinazione').value;
+            const kmPartenza = parseFloat(document.getElementById('svz-kmPartenza').value) || 0;
+            const kmArrivo = parseFloat(document.getElementById('svz-kmArrivo').value) || 0;
+            const speseImporto = parseFloat(document.getElementById('svz-speseImporto').value) || 0;
+            const speseNota = document.getElementById('svz-speseNota').value;
+            const piano = document.getElementById('svz-piano').value;
+            const ascensore = document.getElementById('svz-ascensore').value;
+            const deambulante = document.getElementById('svz-deambulante').value;
+            const sedia = document.getElementById('svz-sedia').value;
+            const mezzoSelezionato = document.getElementById('svz-mezzoSelezionato').value;
+            const autistaSelezionato = document.getElementById('svz-autistaSelezionato').value;
+            const soccorritoreSelezionato = document.getElementById('svz-soccorritoreSelezionato').value;
+            const statoServizio = document.getElementById('svz-statoServizio').value;
+            const tipoCorsa = document.getElementById('svz-tipo-corsa').value;
+            const note = document.getElementById('svz-note').value;
+
+            const idAndata = Date.now().toString();
+            const viaggioAndata = {
+                id: idAndata,
+                regime: regime,
+                paziente: paziente,
+                cf: cf,
+                nre: nre,
+                data: dataS,
+                ora: oraS,
+                telefono: telefono ? telefono.trim() : "",
+                partenza: partenza,
+                soste: soste ? soste.trim() : "",
+                sosta: soste ? soste.trim() : "",
+                destinazione: destinazione,
+                kmPartenza: kmPartenza,
+                kmArrivo: kmArrivo,
+                speseImporto: speseImporto,
+                speseNota: speseNota,
+                piano: piano,
+                ascensore: ascensore,
+                deambulante: deambulante,
+                sedia: sedia,
+                presidio: sedia !== 'No' ? sedia : (deambulante === 'Sì' ? 'Deambulante' : 'Barella'),
+                mezzoSelezionato: mezzoSelezionato,
+                mezzo: mezzoSelezionato,
+                autistaSelezionato: autistaSelezionato,
+                autista: autistaSelezionato,
+                soccorritoreSelezionato: soccorritoreSelezionato,
+                soccorritore: soccorritoreSelezionato,
+                statoServizio: statoServizio,
+                stato: statoServizio,
+                note: note ? note.trim() : "",
+                creatoDa: volontarioCorrente,
+                data_modifica: new Date().toLocaleString('it-IT')
+            };
+
+            const batchUpdates = {};
+            batchUpdates['trasporti/' + idAndata] = viaggioAndata;
+
+            if (tipoCorsa === 'Andata e Ritorno') {
+                const idRitorno = (Date.now() + 1).toString();
+                const oraRitorno = document.getElementById('svz-ora-ritorno').value || "12:00";
+                batchUpdates['trasporti/' + idRitorno] = {
+                    id: idRitorno,
+                    regime: regime,
+                    paziente: paziente,
+                    cf: cf,
+                    nre: nre,
+                    data: dataS,
+                    ora: oraRitorno,
+                    telefono: telefono ? telefono.trim() : "",
+                    partenza: destinazione,
+                    soste: soste ? soste.trim() : "",
+                    sosta: soste ? soste.trim() : "",
+                    destinazione: partenza,
+                    kmPartenza: 0,
+                    kmArrivo: 0,
+                    speseImporto: 0,
+                    speseNota: "Ritorno programmato",
+                    piano: piano,
+                    ascensore: ascensore,
+                    deambulante: deambulante,
+                    sedia: sedia,
+                    presidio: sedia !== 'No' ? sedia : (deambulante === 'Sì' ? 'Deambulante' : 'Barella'),
+                    mezzoSelezionato: mezzoSelezionato,
+                    mezzo: mezzoSelezionato,
+                    autistaSelezionato: autistaSelezionato,
+                    autista: autistaSelezionato,
+                    soccorritoreSelezionato: soccorritoreSelezionato,
+                    soccorritore: soccorritoreSelezionato,
+                    trattaRitorno: true,
+                    statoServizio: statoServizio,
+                    stato: statoServizio,
+                    note: note ? ("(Ritorno) " + note.trim()) : "(Ritorno)",
+                    creatoDa: volontarioCorrente,
+                    data_modifica: new Date().toLocaleString('it-IT')
+                };
+            }
+
+            getDbRef().update(batchUpdates).then(function() {
+                chiudiPagina('page-servizio');
+                document.getElementById('form-servizio').reset();
+                document.getElementById('svz-ritorno-wrap').style.display = 'none';
+                showToast(tipoCorsa === 'Andata e Ritorno' ? 'Servizi di Andata e Ritorno Creati!' : 'Nuovo servizio salvato!');
+            });
+        };
+
+        window.salvaDialisiMobile = function(e) {
+            e.preventDefault();
+            const p = document.getElementById('dia-paziente').value;
+            const cf = document.getElementById('dia-cf').value.toUpperCase();
+            const mz = document.getElementById('dia-mezzo').value;
+            const ptz = document.getElementById('dia-partenza').value;
+            const tp = document.getElementById('dia-tappa').value.trim();
+            const arr = document.getElementById('dia-destinazione').value;
+            const dIn = new Date(document.getElementById('dia-inizio').value);
+            const dFi = new Date(document.getElementById('dia-fine').value);
+            
+            const giorniScelti = Array.from(document.querySelectorAll('input[name="d-giorni"]:checked')).map(function(cb) { return parseInt(cb.value); });
+            if(dFi < dIn) return alert("Errore: Data fine precedente alla data inizio!");
+            if(giorniScelti.length === 0) return alert("Seleziona almeno un giorno della settimana per il ciclo dialisi.");
+
+            let curr = new Date(dIn); 
+            let count = 0;
+            const batchUpdates = {};
+
+            let oA = document.getElementById('dia-turno').value === 'mattina' ? "07:00" : "13:00"; 
+            let oR = document.getElementById('dia-turno').value === 'mattina' ? "12:00" : "17:00";
+            let kmAndata = parseFloat(document.getElementById('dia-km-andata').value) || 15;
+            let kmRitorno = parseFloat(document.getElementById('dia-km-ritorno').value) || 15;
+
+            while(curr <= dFi) {
+                if(giorniScelti.includes(curr.getDay())) {
+                    curr.setMinutes(curr.getMinutes() - curr.getTimezoneOffset()); 
+                    let dStr = curr.toISOString().split('T')[0];
+                    let pStr = ptz + (tp ? ' (Tappa: ' + tp + ')' : "");
+
+                    const idA = (Date.now() + (count++)).toString();
+                    batchUpdates['trasporti/' + idA] = {
+                        id: idA, 
+                        regime: "Convenzione ASL Umbria 2 (Dialisi)", 
+                        paziente: p, 
+                        cf: cf, 
+                        nre: "DIALISI", 
+                        data: dStr, 
+                        ora: oA, 
+                        partenza: pStr, 
+                        soste: tp,
+                        sosta: tp,
+                        destinazione: arr, 
+                        kmPartenza: 0, 
+                        kmArrivo: kmAndata, 
+                        mezzoSelezionato: mz, 
+                        mezzo: mz, 
+                        statoServizio: "Programmato", 
+                        stato: "Programmato",
+                        speseNota: "Ciclo Dialisi - Andata", 
+                        creatoDa: volontarioCorrente,
+                        data_modifica: new Date().toLocaleString('it-IT')
+                    };
+
+                    const idR = (Date.now() + (count++)).toString();
+                    batchUpdates['trasporti/' + idR] = {
+                        id: idR, 
+                        regime: "Convenzione ASL Umbria 2 (Dialisi)", 
+                        paziente: p, 
+                        cf: cf, 
+                        nre: "DIALISI", 
+                        data: dStr, 
+                        ora: oR, 
+                        partenza: arr, 
+                        soste: tp,
+                        sosta: tp,
+                        destinazione: pStr, 
+                        kmPartenza: 0, 
+                        kmArrivo: kmRitorno, 
+                        mezzoSelezionato: mz, 
+                        mezzo: mz, 
+                        trattaRitorno: true,
+                        statoServizio: "Programmato", 
+                        stato: "Programmato",
+                        speseNota: "Ciclo Dialisi - Ritorno", 
+                        creatoDa: volontarioCorrente,
+                        data_modifica: new Date().toLocaleString('it-IT')
+                    };
+                }
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            getDbRef().update(batchUpdates).then(function() { 
+                chiudiPagina('page-dialisi'); 
+                document.getElementById('form-dialisi').reset();
+                showToast('Generati ' + count + ' viaggi dialisi!'); 
+            });
+        };
+
+        window.salvaNCMobile = function(e) {
+            e.preventDefault();
+            const id = Date.now().toString();
+            const obj = { 
+                id: id, 
+                data: document.getElementById('nc-data').value, 
+                rilevatore: document.getElementById('nc-rilevatore').value, 
+                tipo: document.getElementById('nc-tipo').value, 
+                descrizione: document.getElementById('nc-descrizione').value, 
+                stato: 'Aperta' 
+            };
+            getDbRef('nonConformita/' + id).set(obj).then(function() { 
+                chiudiPagina('page-nc'); 
+                document.getElementById('form-nc-mobile').reset(); 
+                showToast('Segnalazione NC inviata!'); 
+            });
+        };
+
+        window.stampaReportGiornalieroPDF = function() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+            const dataFiltroCorrente = dateSettimana[offsetGiorno]; const dataFormattata = new Date(dataFiltroCorrente).toLocaleDateString('it-IT');
+
+            doc.setFontSize(12); doc.setTextColor(139, 92, 246); doc.text(societaInfo.nome, 14, 15);
+            doc.setFontSize(8); doc.setTextColor(100, 100, 100); doc.text(societaInfo.sede + ' | ' + societaInfo.cfPiva, 14, 20); doc.text(societaInfo.runts + ' | ' + societaInfo.autorizzazione, 14, 24);
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.text('REPORT OPERATIVO GIORNALIERO - Data: ' + dataFormattata, 14, 32); doc.text('Operatore in servizio: ' + volontarioCorrente, 14, 37);
+            doc.line(14, 40, 196, 40);
+
+            let serviziGiorno = tuttiTrasporti.filter(function(t) { return t.data === dataFiltroCorrente; }).sort(function(a, b) { return (a.ora > b.ora) ? 1 : -1; });
+            let bodyData = serviziGiorno.map(function(t) {
+                let sostaVal = t.soste || t.sosta || '';
+                let sostaTxt = (sostaVal && sostaVal.trim() !== '') ? ' [Via: ' + sostaVal + '] ➔ ' : ' ➔ ';
+                let tratta = t.partenza + sostaTxt + t.destinazione;
+                let pazienteInfo = t.paziente + (t.sedia && t.sedia !== 'No' ? ' (' + t.sedia + ')' : '') + (t.nre ? ' - NRE: ' + t.nre : '');
+                let kmDiff = (parseFloat(t.kmArrivo) || 0) - (parseFloat(t.kmPartenza) || 0);
+                let statoTxt = (t.stato || t.statoServizio || '-') + (kmDiff > 0 ? ' (' + kmDiff.toFixed(0) + ' km)' : '');
+                return [t.ora, pazienteInfo, t.regime, tratta, t.mezzoSelezionato || t.mezzo, statoTxt];
+            });
+            
+            if(bodyData.length === 0) { bodyData = [["-", "Nessun servizio programmato per questa data", "-", "-", "-", "-"]]; }
+
+            doc.autoTable({ startY: 43, head: [['Ora', 'Paziente / Dettagli', 'Regime', 'Tratta', 'Mezzo', 'Stato / KM']], body: bodyData, theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, styles: { fontSize: 8 } });
+            let finalY = doc.lastAutoTable.finalY + 15; doc.setFontSize(9); doc.text("Firma Operatore / Autista: ______________________", 14, finalY); doc.text("Firma Responsabile Sanitario: ______________________", 110, finalY);
+
+            doc.save('Report_Giornaliero_' + dataFormattata.replace(/\//g, '-') + '.pdf'); showToast('Report PDF Giornaliero Generato!');
+        };
+
+        window.scaricaTesseraPDFMobile = function() {
+            let v = volontari.find(function(vol) { return vol.nome === volontarioCorrente; });
+            if(!v) { alert("Errore nel recupero dati volontario."); return; }
+            
+            try {
+                const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', [86, 54]); 
+                doc.setFillColor(139, 92, 246); doc.rect(0, 0, 54, 18, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont("helvetica", "bold");
+                let nomeEnte = "CUORE D'ARGENTO ODV"; let splitTitle = doc.splitTextToSize(nomeEnte, 50); doc.text(splitTitle, 27, 8, { align: 'center' });
+                doc.setFontSize(5.5); doc.setFont("helvetica", "normal"); doc.text("TESSERA DI RICONOSCIMENTO", 27, 14, { align: 'center' }); doc.text("Ai sensi del D.Lgs. 81/08 e s.m.i.", 27, 16.5, { align: 'center' });
+                if (v.foto) { try { doc.addImage(v.foto, 'JPEG', 17, 22, 20, 25); doc.setDrawColor(139, 92, 246); doc.setLineWidth(0.5); doc.rect(17, 22, 20, 25); } catch(e) {} } else { doc.setDrawColor(200, 200, 200); doc.setFillColor(240, 240, 240); doc.rect(17, 22, 20, 25, 'FD'); doc.setTextColor(150, 150, 150); doc.setFontSize(8); doc.text("FOTO", 27, 35, { align: 'center' }); }
+                doc.setTextColor(0, 0, 0); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text(v.nome || "Nome Non Inserito", 27, 53, { align: 'center' });
+                doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 100, 100); doc.text("Qualifica / Ruolo Operativo:", 27, 58, { align: 'center' });
+                doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(139, 92, 246); doc.text(v.ruolo || v.qualifica || "Volontario", 27, 62, { align: 'center' });
+                doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.text("Matricola / ID: " + (v.id || "000"), 4, 73);
+                let validitaStr = (v.quota) ? new Date(v.quota).toLocaleDateString('it-IT') : "Illimitata"; doc.text("Scadenza: " + validitaStr, 4, 77);
+                doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(28, 80, 50, 80); doc.setFontSize(5); doc.text("Firma del Titolare", 39, 83, { align: 'center' });
+                doc.save('Tessera_' + (v.nome || 'ID').replace(/\s+/g, '_') + '.pdf'); showToast("Tessera scaricata!");
+            } catch(e) { alert("Errore generazione PDF."); }
+        };
+    </script>
+</body>
+</html>
