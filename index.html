@@ -16,8 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- GOOGLE MAPS API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeHOqzhD1Z5fCV6oleFEVPj9Cs5XMNn60&libraries=places" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeHOqzhD1Z5fCV6oleFEVPj9Cs5XMNn60&libraries=places&loading=async" async defer></script>
 
     <style>
         :root {
@@ -31,7 +30,6 @@
         
         body { background-color: var(--bg); color: var(--text-main); padding-bottom: env(safe-area-inset-bottom, 80px); max-width: 600px; margin: 0 auto; position: relative; overflow-x: hidden; min-height: 100vh; }
 
-        /* SCHERMATA LOGIN */
         #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; color: white; overflow-y: auto; }
         .login-card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 28px; color: var(--text-main); box-shadow: 0 20px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .login-logo { background: var(--primary); width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: white; box-shadow: 0 6px 15px rgba(139,92,246,0.4); }
@@ -238,8 +236,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-                <!-- NAVIGAZIONE NATIVA per evitare nuove schede continue su Tablet -->
-                <button onclick="window.location.href='https://edoardino73-prog.github.io/odv-gestionale/turni.html'" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Portale Turni"><i class="fa-solid fa-user-clock"></i> Turni</button>
+                <!-- NAVIGAZIONE NATIVA RIMOSSA "TURNI" COME RICHIESTO -->
                 <button onclick="stampaReportGiornalieroPDF()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Report PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                 <button onclick="apriTesseraVolontario()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 9px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Tessera Volontario"><i class="fa-solid fa-id-card"></i> Tessera</button>
                 <button onclick="eseguiLogout()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 8px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="Blocca App"><i class="fa-solid fa-lock"></i></button>
@@ -311,7 +308,7 @@
                     <h3 style="font-size: 0.8rem; margin: 0; font-weight:500;">Tessera di Riconoscimento</h3>
                 </div>
                 <div class="tessera-body">
-                    <img id="tessera-foto" src="https://via.placeholder.com/150" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                    <img id="tessera-foto" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22150%22%20height%3D%22150%22%20viewBox%3D%220%200%20150%20150%22%3E%3Crect%20width%3D%22150%22%20height%3D%22150%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2218%22%20fill%3D%22%2394a3b8%22%20dy%3D%22.3em%22%20text-anchor%3D%22middle%22%3EFOTO%3C%2Ftext%3E%3C%2Fsvg%3E" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                     <h2 id="tessera-nome" style="font-size: 1.3rem; color: var(--text-main); margin-bottom: 5px; font-weight:800;">-</h2>
                     <div id="tessera-ruolo" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; text-transform: uppercase; margin-bottom: 20px;">-</div>
                     <div id="qrcode-container-mobile" style="display:flex; justify-content:center; align-items:center; min-height: 110px; margin-bottom:15px;"></div>
@@ -629,10 +626,19 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICHE -->
     <div id="toast"><i class="fa-solid fa-circle-check" style="color:#4ade80"></i> <span id="toast-msg">Operazione completata!</span></div>
 
     <script>
+        window.showToast = function(m, isError) {
+            const t = document.getElementById('toast');
+            if(!t) return;
+            t.innerHTML = isError 
+                ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f87171"></i> <span id="toast-msg">' + m + '</span>'
+                : '<i class="fa-solid fa-circle-check" style="color:#4ade80"></i> <span id="toast-msg">' + m + '</span>';
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 3500);
+        };
+
         const URL_QUESTIONARIO_CS = "https://docs.google.com/forms/d/e/1FAIpQLSerxr5ggAvhPCAPKwkPGKkm5tbjsDYWIiPlguYWskejUX7g-w/viewform?usp=sharing&ouid=117117615506418942572";
 
         const firebaseConfig = {
@@ -846,7 +852,11 @@
                     document.getElementById('tessera-id').innerText = volObj.id || 'N/D';
                     
                     const imgEl = document.getElementById('tessera-foto');
-                    if (volObj.foto) { imgEl.src = volObj.foto; } else { imgEl.src = 'https://via.placeholder.com/150'; }
+                    if (volObj.foto) { 
+                        imgEl.src = volObj.foto; 
+                    } else { 
+                        imgEl.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22150%22%20height%3D%22150%22%20viewBox%3D%220%200%20150%20150%22%3E%3Crect%20width%3D%22150%22%20height%3D%22150%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2218%22%20fill%3D%22%2394a3b8%22%20dy%3D%22.3em%22%20text-anchor%3D%22middle%22%3EFOTO%3C%2Ftext%3E%3C%2Fsvg%3E'; 
+                    }
                     
                     let statoQuotaTesto = "IN REGOLA";
                     let coloreQuota = "var(--success)";
@@ -870,7 +880,7 @@
                     controllaScadenzeVolontario(volObj);
                 }
 
-                showToast('Benvenuto, ' + volontarioCorrente);
+                window.showToast('Benvenuto, ' + volontarioCorrente);
                 inizializzaAppDati();
                 aggiornaStatoPresenzaUI();
                 aggiornaWidgetTurnoOggi();
@@ -890,13 +900,12 @@
             document.getElementById('fab-container').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('accreditamento-banner').style.display = 'none';
-            showToast("App bloccata in sicurezza");
+            window.showToast("App bloccata in sicurezza");
         };
 
         window.apriTesseraVolontario = function() { document.getElementById('modal-tessera').classList.add('active'); };
         window.chiudiTesseraVolontario = function() { document.getElementById('modal-tessera').classList.remove('active'); };
 
-        // --- SISTEMA CONTROLLO INGRESSI / USCITE: TIMBRATURA STRAORDINARIA ---
         function getStatoPresenzaCorrente() {
             if (!volontarioCorrente) return false;
             const oggi = getDataStr(0);
@@ -988,9 +997,9 @@
             getDbRef('presenze/' + id).set(objPresenza)
                 .then(function() {
                     if (tipoTimbratura === 'ENTRATA') {
-                        showToast(isStraordinario ? 'Ingresso straordinario registrato! In attesa di convalida.' : 'Inizio turno registrato! Buon servizio.');
+                        window.showToast(isStraordinario ? 'Ingresso straordinario registrato! In attesa di convalida.' : 'Inizio turno registrato! Buon servizio.');
                     } else {
-                        showToast('Fine turno registrata. Arrivederci!');
+                        window.showToast('Fine turno registrata. Arrivederci!');
                     }
                     aggiornaStatoPresenzaUI();
                     renderRegistroPresenze();
@@ -1356,7 +1365,7 @@
 
         window.apriPannelloChiusura = function(id) {
             if (!getStatoPresenzaCorrente()) {
-                showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per poter chiudere un servizio.", true);
+                window.showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per poter chiudere un servizio.", true);
                 return;
             }
 
@@ -1414,7 +1423,7 @@
 
             getDbRef('trasporti/' + idServizioAttivo).update(updates)
                 .then(function() {
-                    showToast('Servizio chiuso e archiviato con successo!');
+                    window.showToast('Servizio chiuso e archiviato con successo!');
                     setTimeout(function() {
                         document.getElementById('modal-cs-qr').classList.add('active');
                         if(!qrCSGenerato) {
@@ -1427,7 +1436,7 @@
                 })
                 .catch(function(err) {
                     console.error("Errore salvataggio chiusura:", err);
-                    showToast("Errore di rete: salvataggio fallito", true);
+                    window.showToast("Errore di rete: salvataggio fallito", true);
                 });
         };
 
@@ -1440,13 +1449,13 @@
         window.apriPagina = function(pageId) { 
             if (volontarioBloccato && ['page-checklist', 'page-servizio', 'page-dialisi'].includes(pageId)) {
                 toggleFab();
-                showToast("ACCESSO BLOCCATO: Documenti scaduti. Contatta la Direzione.", true);
+                window.showToast("ACCESSO BLOCCATO: Documenti scaduti. Contatta la Direzione.", true);
                 return;
             }
 
             if (!getStatoPresenzaCorrente() && ['page-checklist', 'page-servizio', 'page-dialisi', 'page-sanificazione'].includes(pageId)) {
                 toggleFab();
-                showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per operare.", true);
+                window.showToast("ACCESSO NEGATO: Devi timbrare l'Inizio Turno per operare.", true);
                 return;
             }
 
@@ -1473,7 +1482,7 @@
             getDbRef('continuitaServizio/' + id).set(obj).then(function() {
                 chiudiPagina('page-continuita');
                 document.getElementById('form-continuita').reset();
-                showToast('Emergenza segnalata. Centrale avvisata!');
+                window.showToast('Emergenza segnalata. Centrale avvisata!');
             });
         };
 
@@ -1497,7 +1506,7 @@
             getDbRef('checklists/' + id).set(obj).then(function() { 
                 chiudiPagina('page-checklist'); 
                 document.getElementById('form-checklist').reset(); 
-                showToast('Checklist salvata (Sync ISO)!'); 
+                window.showToast('Checklist salvata (Sync ISO)!'); 
             });
         };
 
@@ -1516,7 +1525,7 @@
             getDbRef('sanificazioni/' + id).set(obj).then(function() { 
                 chiudiPagina('page-sanificazione'); 
                 document.getElementById('form-sanificazione').reset(); 
-                showToast('Sanificazione con PMC registrata!'); 
+                window.showToast('Sanificazione con PMC registrata!'); 
             });
         };
 
@@ -1630,7 +1639,7 @@
                 chiudiPagina('page-servizio');
                 document.getElementById('form-servizio').reset();
                 document.getElementById('svz-ritorno-wrap').style.display = 'none';
-                showToast(tipoCorsa === 'Andata e Ritorno' ? 'Servizi di Andata e Ritorno Creati!' : 'Nuovo servizio salvato!');
+                window.showToast(tipoCorsa === 'Andata e Ritorno' ? 'Servizi di Andata e Ritorno Creati!' : 'Nuovo servizio salvato!');
             });
         };
 
@@ -1719,7 +1728,7 @@
             getDbRef().update(batchUpdates).then(function() { 
                 chiudiPagina('page-dialisi'); 
                 document.getElementById('form-dialisi').reset();
-                showToast('Generati ' + count + ' viaggi dialisi!'); 
+                window.showToast('Generati ' + count + ' viaggi dialisi!'); 
             });
         };
 
@@ -1737,7 +1746,7 @@
             getDbRef('nonConformita/' + id).set(obj).then(function() { 
                 chiudiPagina('page-nc'); 
                 document.getElementById('form-nc-mobile').reset(); 
-                showToast('Segnalazione NC inviata!'); 
+                window.showToast('Segnalazione NC inviata!'); 
             });
         };
 
@@ -1766,7 +1775,7 @@
             doc.autoTable({ startY: 43, head: [['Ora', 'Paziente / Dettagli', 'Regime', 'Tratta', 'Mezzo', 'Stato / KM']], body: bodyData, theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, styles: { fontSize: 8 } });
             let finalY = doc.lastAutoTable.finalY + 15; doc.setFontSize(9); doc.text("Firma Operatore / Autista: ______________________", 14, finalY); doc.text("Firma Responsabile Sanitario: ______________________", 110, finalY);
 
-            doc.save('Report_Giornaliero_' + dataFormattata.replace(/\//g, '-') + '.pdf'); showToast('Report PDF Giornaliero Generato!');
+            doc.save('Report_Giornaliero_' + dataFormattata.replace(/\//g, '-') + '.pdf'); window.showToast('Report PDF Giornaliero Generato!');
         };
 
         window.scaricaTesseraPDFMobile = function() {
@@ -1785,7 +1794,7 @@
                 doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.text("Matricola / ID: " + (v.id || "000"), 4, 73);
                 let validitaStr = (v.quota) ? new Date(v.quota).toLocaleDateString('it-IT') : "Illimitata"; doc.text("Scadenza: " + validitaStr, 4, 77);
                 doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(28, 80, 50, 80); doc.setFontSize(5); doc.text("Firma del Titolare", 39, 83, { align: 'center' });
-                doc.save('Tessera_' + (v.nome || 'ID').replace(/\s+/g, '_') + '.pdf'); showToast("Tessera scaricata!");
+                doc.save('Tessera_' + (v.nome || 'ID').replace(/\s+/g, '_') + '.pdf'); window.showToast("Tessera scaricata!");
             } catch(e) { alert("Errore generazione PDF."); }
         };
     </script>
